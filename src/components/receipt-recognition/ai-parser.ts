@@ -6,7 +6,10 @@ import {
 } from "@/components/assistant/request";
 import { numberToAmount } from "@/ledger/bill";
 import type { BillCategory } from "@/ledger/type";
-import { buildReceiptParseImagePrompt, buildReceiptParsePrompt } from "./prompt";
+import {
+    buildReceiptParseImagePrompt,
+    buildReceiptParsePrompt,
+} from "./prompt";
 import type { CandidateBill } from "./types";
 
 /**
@@ -80,9 +83,17 @@ export async function parseReceiptText(
 
     // Request AI to parse, using specified config or default
     const config = getAIConfigById(configId);
-    const response = await requestAI([{ role: "user", content: prompt }], config);
+    const response = await requestAI(
+        [{ role: "user", content: prompt }],
+        config,
+    );
 
-    return parseAIResponseToCandidates(response, imageIndex, categories, ocrText);
+    return parseAIResponseToCandidates(
+        response,
+        imageIndex,
+        categories,
+        ocrText,
+    );
 }
 
 /**
@@ -125,7 +136,6 @@ function parseAIResponseToCandidates(
             merchantExplanation: item.merchantExplanation || undefined,
             time: parseTime(item.time),
             categoryId,
-            comment: item.comment || undefined,
             status: "pending" as const,
             attachImage: false,
             rawText,

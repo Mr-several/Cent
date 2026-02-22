@@ -730,5 +730,12 @@
   "receipt-recognition-step-3": "Review and confirm each transaction record",
   "receipt-original-images": "Original Images",
   "receipt-source-image": "Source: Image {index}",
-  "receipt-merchant-explanation": "Explanation"
+  "receipt-merchant-explanation": "Explanation",
+  "receipt-stage-ocr": "OCR Scanning ({index}/{total})",
+  "receipt-stage-ai": "AI Parsing ({index}/{total})",
+  "receipt-stage-vision": "Vision Recognition ({index}/{total})",
+  "receipt-processing-image": "Processing image {current} of {total}",
+  "receipt-duplicate-warning": "A record from {date} with the same merchant \"{merchant}\" and amount {amount} already exists. This may be a duplicate. Continue adding?",
+  "receipt-possible-duplicate": "A record from {date} with the same amount {amount} already exists. This may be a duplicate. Continue adding?",
+  "receipt-confirm-all-duplicate-warning": "{count} pending record(s) have the same date and amount as existing bills and may be duplicates. Continue confirming all?"
 }

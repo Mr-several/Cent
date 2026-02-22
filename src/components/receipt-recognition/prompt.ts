@@ -111,7 +111,6 @@ ${ocrText}
 4. 收支类型（支出/收入）
 5. 交易分类（必须从下面的分类列表中选择，**绝对不能为空**）
 6. 商户解释（20-30字说明消费性质）
-7. 备注信息
 
 **可用的支出分类：**
 ${expenseCategoryList}
@@ -133,11 +132,10 @@ ${buildCategoryInferenceRules()}
   "merchantExplanation": "解释这是什么类型的消费，帮助用户理解（20-30字）",
   "time": "YYYY-MM-DD HH:mm:ss",
   "type": "expense" | "income",
-  "category": "一级分类 > 二级分类" 或 "一级分类",
-  "comment": "备注"
+  "category": "一级分类 > 二级分类" 或 "一级分类"
 }
 
-**重要：category 字段必须有值，time/merchant/comment 等可以为null，但 category 严禁为null。**`;
+**重要：category 字段必须有值，time/merchant 等可以为null，但 category 严禁为null。**`;
 }
 
 /**
@@ -170,7 +168,6 @@ export function buildReceiptParseImagePrompt(
 4. 收支类型（支出/收入）
 5. 交易分类（必须从下面的分类列表中选择，**绝对不能为空**）
 6. 商户解释（20-30字说明消费性质）
-7. 备注信息
 
 **可用的支出分类：**
 ${expenseCategoryList}
@@ -194,9 +191,8 @@ ${buildCategoryInferenceRules()}
   "merchantExplanation": "解释这是什么类型的消费，帮助用户理解（20-30字）",
   "time": "YYYY-MM-DD HH:mm:ss",
   "type": "expense" | "income",
-  "category": "一级分类 > 二级分类" 或 "一级分类",
-  "comment": "备注"
+  "category": "一级分类 > 二级分类" 或 "一级分类"
 }
 
-**重要：category 字段必须有值，time/merchant/comment 等可以为null，但 category 严禁为null。**`;
+**重要：category 字段必须有值，time/merchant 等可以为null，但 category 严禁为null。**`;
 }

@@ -742,5 +742,12 @@
   "receipt-recognition-step-3": "逐条确认并保存交易记录",
   "receipt-original-images": "原始图片",
   "receipt-source-image": "来源：图片 {index}",
-  "receipt-merchant-explanation": "消费说明"
+  "receipt-merchant-explanation": "消费说明",
+  "receipt-stage-ocr": "OCR 识别中（第 {index}/{total} 张）",
+  "receipt-stage-ai": "AI 解析中（第 {index}/{total} 张）",
+  "receipt-stage-vision": "图像识别中（第 {index}/{total} 张）",
+  "receipt-processing-image": "正在处理第 {current}/{total} 张图片",
+  "receipt-duplicate-warning": "检测到 {date} 已有相同商户「{merchant}」、金额 {amount} 的记录，可能是重复账单。确认继续添加吗？",
+  "receipt-possible-duplicate": "检测到 {date} 已有相同金额 {amount} 的记录，可能是重复账单。确认继续添加吗？",
+  "receipt-confirm-all-duplicate-warning": "待确认记录中有 {count} 条与已有账单的日期和金额相同，可能存在重复。确认继续全部提交吗？"
 }

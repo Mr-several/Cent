@@ -1,12 +1,15 @@
 import dayjs from "dayjs";
 import { useState } from "react";
 import { toast } from "sonner";
+import CategoryIcon from "@/components/category/icon";
 import useCategory from "@/hooks/use-category";
 import { useTag } from "@/hooks/use-tag";
 import { amountToNumber, numberToAmount } from "@/ledger/bill";
-import type { BillType } from "@/ledger/type";
+import type { BillCategory, BillType } from "@/ledger/type";
 import { useIntl } from "@/locale";
+import { useLedgerStore } from "@/store/ledger";
 import { useReceiptStore } from "@/store/receipt";
+import { cn } from "@/utils";
 import { Button } from "../ui/button";
 import type { CandidateBill } from "./types";
 
@@ -14,6 +17,157 @@ interface CandidateRecordItemProps {
     candidate: CandidateBill;
     index: number;
     total: number;
+}
+
+type TreeCategory = BillCategory & { children: BillCategory[] };
+
+/** 内联分类选择器，支持父类+子类两级展示和折叠 */
+function CategoryPicker({
+    value,
+    onChange,
+    type,
+    disabled,
+}: {
+    value?: string;
+    onChange: (id: string) => void;
+    type: BillType;
+    disabled?: boolean;
+}) {
+    const { expenses, incomes } = useCategory();
+    const t = useIntl();
+    const [isOpen, setIsOpen] = useState(false);
+
+    const rootCategories: TreeCategory[] =
+        type === "expense" ? expenses : incomes;
+
+    // 找到当前选中的父类和子类
+    const findSelected = () => {
+        if (!value) return { parent: null, sub: null };
+        for (const parent of rootCategories) {
+            if (parent.id === value) return { parent, sub: null };
+            const sub = parent.children.find((c) => c.id === value);
+            if (sub) return { parent, sub };
+        }
+        return { parent: null, sub: null };
+    };
+
+    const { parent: selectedParent, sub: selectedSub } = findSelected();
+    const displayCategory = selectedSub ?? selectedParent;
+
+    const handleParentClick = (cat: TreeCategory) => {
+        if (cat.children.length === 0) {
+            onChange(cat.id);
+            setIsOpen(false);
+        } else {
+            // 选中父类，展示子类（如果已选中同一父类则折叠）
+            onChange(cat.id);
+        }
+    };
+
+    const handleSubClick = (sub: BillCategory) => {
+        onChange(sub.id);
+        setIsOpen(false);
+    };
+
+    const subCategories = selectedParent?.children ?? [];
+
+    return (
+        <div className="flex-1 space-y-2">
+            {/* 已选分类展示 / 点击打开 */}
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => !disabled && setIsOpen((v) => !v)}
+                className={cn(
+                    "w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors",
+                    disabled
+                        ? "opacity-60 cursor-not-allowed bg-muted"
+                        : "hover:bg-muted/50 cursor-pointer",
+                    isOpen && "border-primary",
+                )}
+            >
+                <div className="flex items-center gap-2">
+                    {displayCategory ? (
+                        <>
+                            <CategoryIcon
+                                icon={displayCategory.icon}
+                                className="w-4 h-4 flex-shrink-0"
+                            />
+                            <span>{displayCategory.name}</span>
+                            {selectedSub && selectedParent && (
+                                <span className="text-xs text-muted-foreground">
+                                    （{selectedParent.name}）
+                                </span>
+                            )}
+                        </>
+                    ) : (
+                        <span className="text-muted-foreground">
+                            {t("receipt-select-category")}
+                        </span>
+                    )}
+                </div>
+                <i
+                    className={cn(
+                        "icon-[mdi--chevron-down] text-muted-foreground transition-transform",
+                        isOpen && "rotate-180",
+                    )}
+                />
+            </button>
+
+            {/* 展开的选择区域 */}
+            {isOpen && !disabled && (
+                <div className="border rounded-lg p-2 space-y-2 bg-background shadow-sm">
+                    {/* 父类列表 */}
+                    <div className="grid grid-cols-3 gap-1">
+                        {rootCategories.map((cat) => (
+                            <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => handleParentClick(cat)}
+                                className={cn(
+                                    "flex items-center gap-1 px-2 py-1.5 rounded-lg border text-xs transition-colors",
+                                    selectedParent?.id === cat.id
+                                        ? "bg-slate-700 text-white border-slate-700"
+                                        : "bg-stone-100 dark:bg-stone-700 hover:bg-stone-200 dark:hover:bg-stone-600",
+                                )}
+                            >
+                                <CategoryIcon
+                                    icon={cat.icon}
+                                    className="w-3.5 h-3.5 flex-shrink-0"
+                                />
+                                <span className="truncate">{cat.name}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* 子类列表（仅当选中了有子类的父类时展示） */}
+                    {subCategories.length > 0 && (
+                        <div className="border rounded-md p-1.5 grid grid-cols-3 gap-1 bg-muted/30">
+                            {subCategories.map((sub) => (
+                                <button
+                                    key={sub.id}
+                                    type="button"
+                                    onClick={() => handleSubClick(sub)}
+                                    className={cn(
+                                        "flex items-center gap-1 px-2 py-1.5 rounded-lg border text-xs transition-colors",
+                                        selectedSub?.id === sub.id
+                                            ? "bg-slate-700 text-white border-slate-700"
+                                            : "bg-background hover:bg-stone-100 dark:hover:bg-stone-700",
+                                    )}
+                                >
+                                    <CategoryIcon
+                                        icon={sub.icon}
+                                        className="w-3.5 h-3.5 flex-shrink-0"
+                                    />
+                                    <span className="truncate">{sub.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 }
 
 /**
@@ -27,16 +181,10 @@ export function CandidateRecordItem({
 }: CandidateRecordItemProps) {
     const { updateCandidate, deleteCandidate, confirmCandidate } =
         useReceiptStore();
-    const { categories } = useCategory();
     const { tags: allTags } = useTag();
     const t = useIntl();
 
     const [isConfirming, setIsConfirming] = useState(false);
-
-    // Get category options based on type
-    const categoryOptions = categories.filter(
-        (c) => c.type === (candidate.type || "expense"),
-    );
 
     const handleFieldChange = (field: keyof CandidateBill, value: any) => {
         updateCandidate(candidate.tempId, { [field]: value });
@@ -56,6 +204,39 @@ export function CandidateRecordItem({
         }
     };
 
+    const checkDuplicate = (): boolean => {
+        if (!candidate.amount) return false;
+        const billTime = candidate.time ?? Date.now();
+        const candidateDay = dayjs(billTime).startOf("day");
+
+        const existingBills = useLedgerStore.getState().bills;
+        const duplicates = existingBills.filter((bill) => {
+            const sameDay = dayjs(bill.time)
+                .startOf("day")
+                .isSame(candidateDay);
+            const sameAmount = bill.amount === candidate.amount;
+            return sameDay && sameAmount;
+        });
+
+        if (duplicates.length === 0) return false;
+
+        const dateStr = candidateDay.format("YYYY-MM-DD");
+        const amountStr = amountToNumber(candidate.amount).toFixed(2);
+
+        const message = candidate.merchant
+            ? t("receipt-duplicate-warning", {
+                  date: dateStr,
+                  amount: amountStr,
+                  merchant: candidate.merchant,
+              })
+            : t("receipt-possible-duplicate", {
+                  date: dateStr,
+                  amount: amountStr,
+              });
+
+        return !window.confirm(message);
+    };
+
     const handleConfirm = async () => {
         if (!candidate.amount) {
             toast.error(t("receipt-amount-required"));
@@ -65,6 +246,10 @@ export function CandidateRecordItem({
             toast.error(t("receipt-category-required"));
             return;
         }
+
+        // 重复账单校验
+        const shouldAbort = checkDuplicate();
+        if (shouldAbort) return;
 
         setIsConfirming(true);
         try {
@@ -94,6 +279,7 @@ export function CandidateRecordItem({
     if (candidate.status === "deleted") return null;
 
     const isConfirmed = candidate.status === "confirmed";
+    const billType = (candidate.type || "expense") as BillType;
 
     return (
         <div
@@ -150,9 +336,15 @@ export function CandidateRecordItem({
             <div className="space-y-3">
                 {/* Type */}
                 <div className="flex items-center gap-2">
-                    <label className="text-sm min-w-[80px]">{t("type")}:</label>
+                    <label
+                        htmlFor={`type-${candidate.tempId}`}
+                        className="text-sm min-w-[80px]"
+                    >
+                        {t("type")}:
+                    </label>
                     <select
-                        value={candidate.type || "expense"}
+                        id={`type-${candidate.tempId}`}
+                        value={billType}
                         onChange={(e) =>
                             handleFieldChange(
                                 "type",
@@ -169,10 +361,14 @@ export function CandidateRecordItem({
 
                 {/* Amount */}
                 <div className="flex items-center gap-2">
-                    <label className="text-sm min-w-[80px]">
+                    <label
+                        htmlFor={`amount-${candidate.tempId}`}
+                        className="text-sm min-w-[80px]"
+                    >
                         {t("amount")}:
                     </label>
                     <input
+                        id={`amount-${candidate.tempId}`}
                         type="number"
                         step="0.01"
                         value={
@@ -190,11 +386,15 @@ export function CandidateRecordItem({
                 {/* Merchant */}
                 {candidate.merchant && (
                     <div className="flex items-center gap-2">
-                        <label className="text-sm min-w-[80px]">
+                        <label
+                            htmlFor={`merchant-${candidate.tempId}`}
+                            className="text-sm min-w-[80px]"
+                        >
                             {t("merchant")}:
                         </label>
                         <div className="flex-1">
                             <input
+                                id={`merchant-${candidate.tempId}`}
                                 type="text"
                                 value={candidate.merchant || ""}
                                 onChange={(e) =>
@@ -218,31 +418,28 @@ export function CandidateRecordItem({
                 )}
 
                 {/* Category */}
-                <div className="flex items-center gap-2">
-                    <label className="text-sm min-w-[80px]">
+                <div className="flex items-start gap-2">
+                    <span className="text-sm min-w-[80px] mt-2">
                         {t("category")}:
-                    </label>
-                    <select
-                        value={candidate.categoryId || ""}
-                        onChange={(e) =>
-                            handleFieldChange("categoryId", e.target.value)
-                        }
+                    </span>
+                    <CategoryPicker
+                        value={candidate.categoryId}
+                        onChange={(id) => handleFieldChange("categoryId", id)}
+                        type={billType}
                         disabled={isConfirmed}
-                        className="flex-1 px-2 py-1 border rounded text-sm"
-                    >
-                        <option value="">{t("receipt-select-category")}</option>
-                        {categoryOptions.map((cat) => (
-                            <option key={cat.id} value={cat.id}>
-                                {cat.name}
-                            </option>
-                        ))}
-                    </select>
+                    />
                 </div>
 
                 {/* Time */}
                 <div className="flex items-center gap-2">
-                    <label className="text-sm min-w-[80px]">{t("time")}:</label>
+                    <label
+                        htmlFor={`time-${candidate.tempId}`}
+                        className="text-sm min-w-[80px]"
+                    >
+                        {t("time")}:
+                    </label>
                     <input
+                        id={`time-${candidate.tempId}`}
                         type="datetime-local"
                         value={
                             candidate.time
@@ -259,10 +456,14 @@ export function CandidateRecordItem({
 
                 {/* Comment */}
                 <div className="flex items-center gap-2">
-                    <label className="text-sm min-w-[80px]">
+                    <label
+                        htmlFor={`comment-${candidate.tempId}`}
+                        className="text-sm min-w-[80px]"
+                    >
                         {t("comment")}:
                     </label>
                     <input
+                        id={`comment-${candidate.tempId}`}
                         type="text"
                         value={candidate.comment || ""}
                         onChange={(e) =>

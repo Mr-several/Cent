@@ -8,15 +8,25 @@ import { useReceiptStore } from "@/store/receipt";
 import { parseReceiptImage, parseReceiptText } from "./ai-parser";
 import type { CandidateBill } from "./types";
 
+export type ProcessingStatus = {
+    stage: "ocr" | "ai" | "vision";
+    imageIndex: number;
+    totalImages: number;
+} | null;
+
 /**
  * Process images with OCR and AI parsing
  * @param images Array of image files
+ * @param categories Available categories for AI context
+ * @param t i18n helper
+ * @param onStatusChange Callback to report current processing stage
  * @returns Array of candidate bills
  */
 export async function processReceiptImages(
     images: File[],
     categories: any[],
     t: any,
+    onStatusChange?: (status: ProcessingStatus) => void,
 ): Promise<CandidateBill[]> {
     const preferenceState = usePreferenceStore.getState();
     const mode = preferenceState.receiptRecognitionMode ?? "ocr-ai";
@@ -33,7 +43,7 @@ export async function processReceiptImages(
 
             if (mode === "vision-ai") {
                 // 视觉模型模式：跳过 OCR，直接将图片发给视觉模型
-                toast.info(t("receipt-ai-parsing", { index: i + 1 }));
+                onStatusChange?.({ stage: "vision", imageIndex: i, totalImages: images.length });
                 const aiStartTime = Date.now();
                 candidates = await parseReceiptImage(image, i, categories, configId);
                 const aiDuration = Date.now() - aiStartTime;
@@ -46,12 +56,7 @@ export async function processReceiptImages(
 
                 // Step 1: OCR
                 const ocrStartTime = Date.now();
-                toast.info(
-                    t("receipt-ocr-processing", {
-                        index: i + 1,
-                        total: images.length,
-                    }),
-                );
+                onStatusChange?.({ stage: "ocr", imageIndex: i, totalImages: images.length });
                 const ocrText = await ocrProvider.recognize(image);
                 const ocrDuration = Date.now() - ocrStartTime;
                 console.log(
@@ -65,7 +70,7 @@ export async function processReceiptImages(
 
                 // Step 2: AI 解析
                 const aiStartTime = Date.now();
-                toast.info(t("receipt-ai-parsing", { index: i + 1 }));
+                onStatusChange?.({ stage: "ai", imageIndex: i, totalImages: images.length });
                 candidates = await parseReceiptText(ocrText, i, categories, configId);
                 const aiDuration = Date.now() - aiStartTime;
                 console.log(
@@ -104,6 +109,7 @@ export async function processReceiptImages(
  */
 export function useReceiptRecognition() {
     const [isProcessing, setIsProcessing] = useState(false);
+    const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>(null);
     const { startSession, addCandidates, setProcessingDuration } =
         useReceiptStore();
     const { categories } = useCategory();
@@ -127,6 +133,7 @@ export function useReceiptRecognition() {
                 images,
                 categories,
                 t,
+                setProcessingStatus,
             );
 
             // Record total processing duration
@@ -153,11 +160,13 @@ export function useReceiptRecognition() {
             );
         } finally {
             setIsProcessing(false);
+            setProcessingStatus(null);
         }
     };
 
     return {
         isProcessing,
+        processingStatus,
         startRecognition,
     };
 }

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { BillType } from "@/ledger/type";
 import { useIntl } from "@/locale";
+import { useLedgerStore } from "@/store/ledger";
 import { useReceiptStore } from "@/store/receipt";
 import { Button } from "../ui/button";
 import { CandidateRecordItem } from "./candidate-item";
@@ -77,6 +78,33 @@ export function BatchConfirmation() {
     };
 
     const handleConfirmAll = async () => {
+        // 批量确认前检测所有 pending 记录中的重复项
+        const pendingCandidates = (currentSession?.candidates ?? []).filter(
+            (c: CandidateBill) => c.status === "pending",
+        );
+        const existingBills = useLedgerStore.getState().bills;
+        const duplicateCount = pendingCandidates.filter((candidate) => {
+            if (!candidate.amount) return false;
+            const billTime = candidate.time ?? Date.now();
+            const candidateDay = dayjs(billTime).startOf("day");
+            return existingBills.some((bill) => {
+                const sameDay = dayjs(bill.time)
+                    .startOf("day")
+                    .isSame(candidateDay);
+                const sameAmount = bill.amount === candidate.amount;
+                return sameDay && sameAmount;
+            });
+        }).length;
+
+        if (duplicateCount > 0) {
+            const proceed = window.confirm(
+                t("receipt-confirm-all-duplicate-warning", {
+                    count: duplicateCount,
+                }),
+            );
+            if (!proceed) return;
+        }
+
         setIsConfirmingAll(true);
         try {
             const { succeeded, skipped } = await confirmAllPending();
@@ -84,9 +112,7 @@ export function BatchConfirmation() {
                 t("receipt-confirm-all-success", { succeeded, skipped }),
             );
         } catch (error) {
-            toast.error(
-                error instanceof Error ? error.message : "确认失败",
-            );
+            toast.error(error instanceof Error ? error.message : "确认失败");
         } finally {
             setIsConfirmingAll(false);
         }
@@ -130,9 +156,7 @@ export function BatchConfirmation() {
                     <button
                         type="button"
                         className="w-full flex items-center justify-between px-4 py-2 bg-muted/10 hover:bg-muted/20 transition-colors text-left"
-                        onClick={() =>
-                            setIsImagesExpanded((prev) => !prev)
-                        }
+                        onClick={() => setIsImagesExpanded((prev) => !prev)}
                     >
                         <span className="text-sm font-medium">
                             {t("receipt-original-images")}
@@ -179,9 +203,7 @@ export function BatchConfirmation() {
                     <button
                         type="button"
                         className="w-full flex items-center justify-between px-4 py-2 bg-muted/30 hover:bg-muted/40 transition-colors text-left"
-                        onClick={() =>
-                            setIsSettingsExpanded((prev) => !prev)
-                        }
+                        onClick={() => setIsSettingsExpanded((prev) => !prev)}
                     >
                         <span className="text-sm font-medium">
                             {t("receipt-global-settings")}
