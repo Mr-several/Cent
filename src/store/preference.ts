@@ -23,6 +23,12 @@ type State = {
     voiceRecordingEnabled?: boolean;
     /** 是否使用键盘输入代替语言识别 */
     voiceByKeyboard?: boolean;
+    /** 是否开启识图记账 */
+    receiptRecognitionEnabled?: boolean;
+    /** 识图记账识别模式：ocr-ai（OCR+大模型）或 vision-ai（图像识别模型直接识图） */
+    receiptRecognitionMode?: "ocr-ai" | "vision-ai";
+    /** 识图记账使用的 AI 配置 ID，为空时回退到默认 AI 助手配置 */
+    receiptAIConfigId?: string;
     /** relayr中转服务配置 */
     relayr?: {
         enable?: boolean;

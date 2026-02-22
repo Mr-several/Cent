@@ -10,6 +10,8 @@ export default function ComplexAddButton({
 }) {
     const [voiceRecordingEnabled] = usePreference("voiceRecordingEnabled");
     const [voiceByKeyboard] = usePreference("voiceByKeyboard");
+
+    // Priority: Voice > Keyboard > Default
     if (!voiceRecordingEnabled) {
         return (
             <BaseButton onClick={onClick}>

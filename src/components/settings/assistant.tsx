@@ -19,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "../ui/select";
+import { Switch } from "../ui/switch";
 
 // 配置编辑弹框
 function ConfigForm({
@@ -37,6 +38,12 @@ function ConfigForm({
     const [model, setModel] = useState(edit?.model ?? "");
     const [apiType, setApiType] = useState<AIConfig["apiType"]>(
         edit?.apiType ?? "open-ai-compatible",
+    );
+    const [thinkingEnabled, setThinkingEnabled] = useState(
+        edit?.thinkingEnabled ?? false,
+    );
+    const [isVisionModel, setIsVisionModel] = useState(
+        edit?.isVisionModel ?? false,
     );
     const [isTesting, setIsTesting] = useState(false);
     const [showApiKey, setShowApiKey] = useState(false);
@@ -67,10 +74,12 @@ function ConfigForm({
             apiUrl: apiUrl.trim(),
             model: model.trim(),
             apiType: apiType,
+            thinkingEnabled: thinkingEnabled,
+            isVisionModel: isVisionModel,
         };
 
         onConfirm?.(config);
-    }, [name, apiKey, apiUrl, model, apiType, edit, onConfirm, t]);
+    }, [name, apiKey, apiUrl, model, apiType, thinkingEnabled, isVisionModel, edit, onConfirm, t]);
 
     const handleTestConnection = useCallback(async () => {
         if (!apiKey.trim() || !apiUrl.trim() || !model.trim()) {
@@ -259,6 +268,42 @@ function ConfigForm({
                         />
                         <div className="text-xs opacity-60 mt-1">
                             {t("ai-config-model-description")}
+                        </div>
+                    </div>
+
+                    {/* 思考模式开关 */}
+                    <div className="px-4">
+                        <div className="flex justify-between items-center py-1">
+                            <div>
+                                <div className="text-sm">
+                                    {t("ai-config-thinking")}
+                                </div>
+                                <div className="text-xs opacity-60 mt-0.5">
+                                    {t("ai-config-thinking-description")}
+                                </div>
+                            </div>
+                            <Switch
+                                checked={thinkingEnabled}
+                                onCheckedChange={setThinkingEnabled}
+                            />
+                        </div>
+                    </div>
+
+                    {/* 图像识别模型开关 */}
+                    <div className="px-4">
+                        <div className="flex justify-between items-center py-1">
+                            <div>
+                                <div className="text-sm">
+                                    {t("ai-config-is-vision-model")}
+                                </div>
+                                <div className="text-xs opacity-60 mt-0.5">
+                                    {t("ai-config-is-vision-model-description")}
+                                </div>
+                            </div>
+                            <Switch
+                                checked={isVisionModel}
+                                onCheckedChange={setIsVisionModel}
+                            />
                         </div>
                     </div>
                 </div>

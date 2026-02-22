@@ -17,6 +17,7 @@ import LanguageSettingsItem from "./language";
 import MapSettingsItem from "./map-settings";
 import PresetSettingsItem from "./preset";
 import QuickEntrySettingsItem from "./quick-entry";
+import ReceiptSettingsItem from "./receipt";
 import ThemeSettingsItem from "./theme";
 import UserSettingsItem from "./user";
 import VoiceSettingsItem from "./voice";
@@ -124,6 +125,7 @@ export default function SettingsForm({
                             <AssistantSettingsItem />
                             {showRelyr && <QuickEntrySettingsItem />}
                             <VoiceSettingsItem />
+                            <ReceiptSettingsItem />
                         </div>
                     </div>
                     <div>

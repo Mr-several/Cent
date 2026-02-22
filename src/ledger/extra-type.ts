@@ -90,6 +90,10 @@ export type AIConfig = {
     apiUrl: string;
     model: string;
     apiType: "open-ai-compatible" | "google-ai-studio"; // 支持OpenAI兼容和Google AI Studio两种API格式
+    /** 是否启用模型思考模式，默认关闭 */
+    thinkingEnabled?: boolean;
+    /** 是否为图像识别（视觉）模型，仅用于标识，不影响 API 调用，默认 false */
+    isVisionModel?: boolean;
 };
 
 // 个人配置，不需要转换，可以略过
