@@ -49,4 +49,6 @@ export type RecognitionSession = {
     globalType?: BillType;
     /** Session creation time */
     createdAt: number;
+    /** Total processing duration in milliseconds */
+    processingDuration?: number;
 };

@@ -104,7 +104,8 @@ export async function processReceiptImages(
  */
 export function useReceiptRecognition() {
     const [isProcessing, setIsProcessing] = useState(false);
-    const { startSession, addCandidates } = useReceiptStore();
+    const { startSession, addCandidates, setProcessingDuration } =
+        useReceiptStore();
     const { categories } = useCategory();
     const t = useIntl();
 
@@ -115,6 +116,7 @@ export function useReceiptRecognition() {
         }
 
         setIsProcessing(true);
+        const sessionStartTime = Date.now();
 
         try {
             // Start a new session
@@ -126,6 +128,10 @@ export function useReceiptRecognition() {
                 categories,
                 t,
             );
+
+            // Record total processing duration
+            const totalDuration = Date.now() - sessionStartTime;
+            setProcessingDuration(totalDuration);
 
             if (candidates.length === 0) {
                 toast.error(t("receipt-no-candidates"));

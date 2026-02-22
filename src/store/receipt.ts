@@ -17,6 +17,11 @@ interface ReceiptStore {
     updateCandidate: (tempId: string, updates: Partial<CandidateBill>) => void;
     deleteCandidate: (tempId: string) => void;
     confirmCandidate: (tempId: string) => Promise<void>;
+    setProcessingDuration: (ms: number) => void;
+
+    // Batch actions (only affect pending records)
+    confirmAllPending: () => Promise<{ succeeded: number; skipped: number }>;
+    deleteAllPending: () => void;
 
     // Global settings
     setGlobalTime: (time: number) => void;
@@ -117,6 +122,52 @@ export const useReceiptStore = create<ReceiptStore>((set, get) => ({
 
         // Update candidate status
         get().updateCandidate(tempId, { status: "confirmed" });
+    },
+
+    setProcessingDuration: (ms: number) => {
+        set((state) => {
+            if (!state.currentSession) return state;
+            return {
+                currentSession: {
+                    ...state.currentSession,
+                    processingDuration: ms,
+                },
+            };
+        });
+    },
+
+    confirmAllPending: async () => {
+        const pendingCandidates = (
+            get().currentSession?.candidates ?? []
+        ).filter((c: CandidateBill) => c.status === "pending");
+
+        let succeeded = 0;
+        let skipped = 0;
+
+        for (const candidate of pendingCandidates) {
+            try {
+                await get().confirmCandidate(candidate.tempId);
+                succeeded++;
+            } catch {
+                skipped++;
+            }
+        }
+
+        return { succeeded, skipped };
+    },
+
+    deleteAllPending: () => {
+        set((state) => {
+            if (!state.currentSession) return state;
+            return {
+                currentSession: {
+                    ...state.currentSession,
+                    candidates: state.currentSession.candidates.filter(
+                        (c: CandidateBill) => c.status !== "pending",
+                    ),
+                },
+            };
+        });
     },
 
     setGlobalTime: (time: number) => {
