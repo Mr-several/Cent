@@ -418,16 +418,25 @@ export function CandidateRecordItem({
 
     return (
         <div
-            className={`border rounded-lg p-4 ${
+            className={cn(
+                "border rounded-xl p-4",
                 isConfirmed
                     ? "bg-green-50 dark:bg-green-900/20 opacity-60"
-                    : "bg-background"
-            }`}
+                    : "bg-background shadow-sm",
+            )}
         >
             {/* Header */}
-            <div className="flex items-center justify-between mb-3">
-                <div className="text-sm font-medium">
-                    {t("receipt-record-index", { index: index + 1, total })}
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/60">
+                <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-semibold">
+                        {t("receipt-record-index", { index: index + 1, total })}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                        ·{" "}
+                        {t("receipt-source-image", {
+                            index: candidate.sourceImageIndex + 1,
+                        })}
+                    </span>
                 </div>
                 <div className="flex gap-2">
                     {!isConfirmed && (
@@ -460,19 +469,11 @@ export function CandidateRecordItem({
                 </div>
             </div>
 
-            {/* Source Image Info */}
-            <div className="text-xs text-muted-foreground mb-3">
-                {t("receipt-source-image", {
-                    index: candidate.sourceImageIndex + 1,
-                })}
-            </div>
-
             {/* Form Fields */}
             <div className="space-y-3">
-                {/* Type — pill toggle */}
+                {/* 类型 + 金额 — 合并为单行 */}
                 <div className="flex items-center gap-2">
-                    <span className="text-sm min-w-[80px]">{t("type")}:</span>
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-1.5 flex-shrink-0">
                         {(["expense", "income"] as BillType[]).map((t_) => (
                             <button
                                 key={t_}
@@ -480,7 +481,7 @@ export function CandidateRecordItem({
                                 disabled={isConfirmed}
                                 onClick={() => handleFieldChange("type", t_)}
                                 className={cn(
-                                    "px-3 py-1 rounded-full text-xs font-medium border transition-colors",
+                                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors cursor-pointer",
                                     billType === t_
                                         ? t_ === "expense"
                                             ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/50"
@@ -494,19 +495,13 @@ export function CandidateRecordItem({
                             </button>
                         ))}
                     </div>
-                </div>
-
-                {/* Amount */}
-                <div className="flex items-center gap-2">
-                    <label
-                        htmlFor={`amount-${candidate.tempId}`}
-                        className="text-sm min-w-[80px]"
-                    >
-                        {t("amount")}:
-                    </label>
+                    <span className="text-sm text-muted-foreground flex-shrink-0">
+                        ¥
+                    </span>
                     <input
                         id={`amount-${candidate.tempId}`}
                         type="number"
+                        inputMode="decimal"
                         step="0.01"
                         value={
                             candidate.amount
@@ -516,18 +511,18 @@ export function CandidateRecordItem({
                         onChange={(e) => handleAmountChange(e.target.value)}
                         disabled={isConfirmed}
                         placeholder={t("receipt-amount-placeholder")}
-                        className="flex-1 px-2 py-1 border rounded text-sm"
+                        className="flex-1 px-3 py-1.5 border rounded-lg text-sm bg-background"
                     />
                 </div>
 
                 {/* Merchant */}
                 {candidate.merchant && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <label
                             htmlFor={`merchant-${candidate.tempId}`}
-                            className="text-sm min-w-[80px]"
+                            className="text-xs text-muted-foreground min-w-[40px]"
                         >
-                            {t("merchant")}:
+                            {t("merchant")}
                         </label>
                         <div className="flex-1">
                             <input
@@ -541,9 +536,8 @@ export function CandidateRecordItem({
                                     )
                                 }
                                 disabled={isConfirmed}
-                                className="w-full px-2 py-1 border rounded text-sm"
+                                className="w-full px-3 py-1.5 border rounded-lg text-sm bg-background"
                             />
-                            {/* Merchant Explanation */}
                             {candidate.merchantExplanation && (
                                 <div className="text-xs text-muted-foreground mt-1 flex items-start gap-1">
                                     <i className="icon-[mdi--lightbulb-outline] text-sm flex-shrink-0 mt-0.5" />
@@ -555,12 +549,11 @@ export function CandidateRecordItem({
                 )}
 
                 {/* Category */}
-                <div className="flex items-start gap-2">
-                    <span className="text-sm min-w-[80px] mt-2">
-                        {t("category")}:
+                <div className="flex items-start gap-3">
+                    <span className="text-xs text-muted-foreground min-w-[40px] mt-2">
+                        {t("category")}
                     </span>
                     <div className="flex-1 space-y-1.5">
-                        {/* 商户记忆分类建议 Chip（仅当商户有历史记忆时展示） */}
                         {candidate.memorySuggestions &&
                             candidate.memorySuggestions.length > 0 && (
                                 <MerchantMemorySuggestions
@@ -576,39 +569,40 @@ export function CandidateRecordItem({
                                     disabled={isConfirmed}
                                 />
                             )}
-                        <CategoryPicker
-                            value={candidate.categoryId}
-                            onChange={(id) =>
-                                handleFieldChange("categoryId", id)
-                            }
-                            type={billType}
-                            disabled={isConfirmed}
-                        />
-                        {/* 编辑分类入口 — 风格与编辑标签保持一致 */}
-                        {!isConfirmed && (
-                            <div className="flex justify-end">
+                        <div className="flex items-center gap-2">
+                            <CategoryPicker
+                                value={candidate.categoryId}
+                                onChange={(id) =>
+                                    handleFieldChange("categoryId", id)
+                                }
+                                type={billType}
+                                disabled={isConfirmed}
+                            />
+                            {!isConfirmed && (
                                 <button
                                     type="button"
                                     onClick={() => showCategoryList(billType)}
-                                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border border-dashed text-muted-foreground hover:text-foreground hover:border-muted-foreground/60 transition-colors cursor-pointer"
+                                    className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs border border-dashed text-muted-foreground hover:text-foreground hover:border-muted-foreground/60 transition-colors cursor-pointer"
                                 >
                                     <i className="icon-[mdi--pencil-outline] w-3.5 h-3.5" />
                                     {t("receipt-category-edit")}
                                 </button>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {/* Time — DatePicker */}
-                <div className="flex items-center gap-2">
-                    <span className="text-sm min-w-[80px]">{t("time")}:</span>
+                <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground min-w-[40px]">
+                        {t("time")}
+                    </span>
                     <div
                         className={cn(
                             "flex-1 px-3 py-1.5 border rounded-lg text-sm transition-colors",
                             isConfirmed
                                 ? "opacity-60 cursor-not-allowed bg-muted"
-                                : "hover:bg-muted/40 cursor-pointer",
+                                : "hover:bg-muted/40 cursor-pointer bg-background",
                         )}
                     >
                         <DatePicker
@@ -622,17 +616,16 @@ export function CandidateRecordItem({
                     </div>
                 </div>
 
-                {/* Tags — 最近使用快选（最多5个）+ 编辑按钮 */}
+                {/* Tags */}
                 {allTags.length > 0 && (
-                    <div className="flex items-start gap-2">
-                        <span className="text-sm min-w-[80px] mt-1.5">
-                            {t("receipt-tags-label")}:
+                    <div className="flex items-start gap-3">
+                        <span className="text-xs text-muted-foreground min-w-[40px] mt-1.5">
+                            {t("receipt-tags-label")}
                         </span>
                         <div
                             className="flex-1 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none flex-wrap"
                             style={{ touchAction: "pan-x" }}
                         >
-                            {/* 最近使用的 tag（最多5条），无历史时回退展示全部标签前5个 */}
                             {quickTagIds.map((tagId) => {
                                 const tag = allTags.find(
                                     (tg) => tg.id === tagId,
@@ -663,7 +656,7 @@ export function CandidateRecordItem({
                                             );
                                         }}
                                         className={cn(
-                                            "flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors",
+                                            "flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer",
                                             `with-tag-color tag-${color}`,
                                             isSelected
                                                 ? "bg-[var(--current-tag-color)]/15 text-[var(--current-tag-color)] border-[var(--current-tag-color)]/60"
@@ -682,12 +675,11 @@ export function CandidateRecordItem({
                                     </button>
                                 );
                             })}
-                            {/* 编辑标签按钮 */}
                             {!isConfirmed && (
                                 <button
                                     type="button"
                                     onClick={() => showTagList()}
-                                    className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border border-dashed text-muted-foreground hover:text-foreground hover:border-muted-foreground/60 transition-colors"
+                                    className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border border-dashed text-muted-foreground hover:text-foreground hover:border-muted-foreground/60 transition-colors cursor-pointer"
                                 >
                                     <i className="icon-[mdi--tag-plus-outline] w-3.5 h-3.5" />
                                     {t("receipt-tags-edit")}
@@ -698,12 +690,12 @@ export function CandidateRecordItem({
                 )}
 
                 {/* Comment */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     <label
                         htmlFor={`comment-${candidate.tempId}`}
-                        className="text-sm min-w-[80px]"
+                        className="text-xs text-muted-foreground min-w-[40px]"
                     >
-                        {t("comment")}:
+                        {t("comment")}
                     </label>
                     <input
                         id={`comment-${candidate.tempId}`}
@@ -714,19 +706,16 @@ export function CandidateRecordItem({
                         }
                         disabled={isConfirmed}
                         placeholder={t("receipt-comment-placeholder")}
-                        className="flex-1 px-2 py-1 border rounded text-sm"
+                        className="flex-1 px-3 py-1.5 border rounded-lg text-sm bg-background"
                     />
                 </div>
 
                 {/* Attach Image */}
                 {!isConfirmed && (
-                    <div className="flex items-center gap-2">
-                        <label
-                            htmlFor={`attach-image-${candidate.tempId}`}
-                            className="text-sm min-w-[80px]"
-                        >
-                            {t("receipt-attach-image")}:
-                        </label>
+                    <label
+                        htmlFor={`attach-image-${candidate.tempId}`}
+                        className="flex items-center gap-1.5 w-fit cursor-pointer"
+                    >
                         <input
                             id={`attach-image-${candidate.tempId}`}
                             type="checkbox"
@@ -737,9 +726,12 @@ export function CandidateRecordItem({
                                     e.target.checked,
                                 )
                             }
-                            className="w-4 h-4"
+                            className="w-4 h-4 cursor-pointer"
                         />
-                    </div>
+                        <span className="text-xs text-muted-foreground">
+                            {t("receipt-attach-image")}
+                        </span>
+                    </label>
                 )}
             </div>
         </div>

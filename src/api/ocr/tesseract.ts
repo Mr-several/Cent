@@ -16,6 +16,9 @@ export class TesseractOCR implements OCRProvider {
     async recognize(image: File): Promise<string> {
         try {
             const result = await Tesseract.recognize(image, "chi_sim+eng", {
+                // 部署到静态站点后，使用同源 worker 避免 CSP 阻止 CDN 脚本
+                workerPath: "/worker.min.js",
+                workerBlobURL: false,
                 logger: (m) => {
                     // Log progress for debugging
                     if (m.status === "recognizing text") {

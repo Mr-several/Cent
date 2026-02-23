@@ -378,12 +378,66 @@ export default function EditorForm({
                     />
                 ) : (
                     <>
+                        {/* 金额显示条 — 仅 showTabs 模式下显示，补充缺失的金额反馈 */}
+                        {showTabs && (
+                            <div className={cn(
+                                "mx-2 flex items-center gap-3 rounded-2xl px-4 py-3 flex-shrink-0 transition-colors duration-300",
+                                billState.type === "income"
+                                    ? "bg-emerald-950"
+                                    : "bg-stone-900",
+                            )}>
+                                <div className="flex gap-1.5 flex-shrink-0">
+                                    {(["expense", "income"] as const).map((tp) => (
+                                        <button
+                                            key={tp}
+                                            type="button"
+                                            onClick={() =>
+                                                setBillState((v) => ({
+                                                    ...v,
+                                                    type: tp,
+                                                    categoryId:
+                                                        tp === "expense"
+                                                            ? ExpenseBillCategories[0].id
+                                                            : IncomeBillCategories[0].id,
+                                                }))
+                                            }
+                                            className={cn(
+                                                "px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-150 cursor-pointer active:scale-95",
+                                                billState.type === tp
+                                                    ? tp === "expense"
+                                                        ? "bg-rose-500 text-white border-rose-400 shadow-md shadow-rose-500/30"
+                                                        : "bg-emerald-500 text-white border-emerald-400 shadow-md shadow-emerald-500/30"
+                                                    : "bg-white/8 text-white/35 border-white/10 hover:bg-white/15 hover:text-white/60",
+                                            )}
+                                        >
+                                            {t(tp)}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    ref={monitorRef}
+                                    type="button"
+                                    onFocus={() => setMonitorFocused(true)}
+                                    onBlur={() => setMonitorFocused(false)}
+                                    className="flex-1 flex justify-end items-center outline-none min-h-[44px]"
+                                >
+                                    <Calculator.Value
+                                        className={cn(
+                                            "text-white text-3xl font-bold text-right tracking-tight",
+                                            "after:inline-block after:content-['|'] after:opacity-0 after:font-thin after:translate-y-[-3px]",
+                                            monitorFocused && "after:animate-caret-blink",
+                                        )}
+                                    />
+                                </button>
+                            </div>
+                        )}
+
                         {/* categories */}
-                        <div className="flex-1 flex-shrink-0 overflow-y-auto min-h-[80px] scrollbar-hidden flex flex-col px-2 text-sm font-medium gap-2">
-                            <div className="flex flex-col min-h-[80px] grow-[2] shrink overflow-y-auto scrollbar-hidden w-full">
+                        <div className="flex-shrink-0 overflow-y-auto scrollbar-hidden flex flex-col mx-2 gap-2 text-sm font-medium">
+                            <div className="flex flex-col shrink-0 overflow-y-auto scrollbar-hidden w-full">
                                 <div
                                     className={cn(
-                                        "grid gap-1",
+                                        "grid gap-1.5",
                                         categoriesGridClassName(categories),
                                     )}
                                 >
@@ -391,6 +445,7 @@ export default function EditorForm({
                                         <CategoryItem
                                             key={item.id}
                                             category={item}
+                                            billType={billState.type}
                                             selected={
                                                 billState.categoryId === item.id
                                             }
@@ -404,23 +459,21 @@ export default function EditorForm({
                                     ))}
                                     <button
                                         type="button"
-                                        className={cn(
-                                            `rounded-lg border flex-1 py-1 px-2 h-8 flex gap-2 items-center justify-center whitespace-nowrap cursor-pointer`,
-                                        )}
+                                        className="rounded-xl border-[1.5px] border-dashed border-stone-300 flex-1 py-2 px-2 min-h-[44px] flex gap-1.5 items-center justify-center whitespace-nowrap cursor-pointer text-stone-400 bg-white hover:bg-stone-50 hover:border-stone-400 transition-all duration-150 active:scale-95 text-xs font-medium"
                                         onClick={() => {
                                             showCategoryList(billState.type);
                                         }}
                                     >
-                                        <i className="icon-[mdi--settings]"></i>
+                                        <i className="icon-[mdi--tune-variant] text-base"></i>
                                         {t("edit")}
                                     </button>
                                 </div>
                             </div>
                             {(subCategories?.length ?? 0) > 0 && (
-                                <div className="flex flex-col min-h-[68px] grow-[1] shrink max-h-fit overflow-y-auto rounded-md border p-2 shadow scrollbar-hidden">
+                                <div className="flex flex-col shrink-0 max-h-fit overflow-y-auto rounded-xl bg-stone-100/80 p-2 scrollbar-hidden">
                                     <div
                                         className={cn(
-                                            "grid gap-1",
+                                            "grid gap-1.5",
                                             categoriesGridClassName(
                                                 subCategories,
                                             ),
@@ -431,6 +484,7 @@ export default function EditorForm({
                                                 <CategoryItem
                                                     key={subCategory.id}
                                                     category={subCategory}
+                                                    billType={billState.type}
                                                     selected={
                                                         billState.categoryId ===
                                                         subCategory.id
@@ -450,7 +504,7 @@ export default function EditorForm({
                             )}
                         </div>
                         {/* tags */}
-                        <div className="w-full h-[40px] flex-shrink-0 flex-grow-0 flex gap-1 py-1 items-center overflow-x-auto px-2 text-sm font-medium scrollbar-hidden">
+                        <div className="w-full h-10 flex-shrink-0 flex-grow-0 flex gap-1.5 py-1 items-center overflow-x-auto px-2 text-sm font-medium scrollbar-hidden">
                             <TagGroupSelector
                                 isCreate={isCreate}
                                 selectedTags={billState.tagIds}
@@ -466,14 +520,12 @@ export default function EditorForm({
                             />
                             <button
                                 type="button"
-                                className={cn(
-                                    `rounded-lg border py-1 px-2 h-8 flex gap-2 items-center justify-center whitespace-nowrap cursor-pointer`,
-                                )}
+                                className="rounded-full border border-stone-200 py-1 px-2.5 h-7 flex gap-1 items-center justify-center whitespace-nowrap cursor-pointer text-stone-400 text-xs hover:bg-stone-50 hover:border-stone-300 transition-colors duration-150 flex-shrink-0"
                                 onClick={() => {
                                     showTagList();
                                 }}
                             >
-                                <i className="icon-[mdi--tag-text-outline]"></i>
+                                <i className="icon-[mdi--tag-text-outline] text-sm"></i>
                                 {t("edit-tags")}
                             </button>
                         </div>
@@ -485,128 +537,114 @@ export default function EditorForm({
                                 "keyboard-field flex gap-2 flex-col justify-start bg-stone-900 sm:rounded-b-md text-[white] p-2 pb-[max(env(safe-area-inset-bottom),8px)]",
                             )}
                         >
-                            <div className="flex justify-between items-center">
-                                <div className="flex gap-2 items-center h-10">
-                                    <div className="flex items-center h-full">
-                                        {(billState.images?.length ?? 0) >
-                                            0 && (
-                                            <div className="pr-2 flex gap-[6px] items-center overflow-x-auto max-w-22 h-full scrollbar-hidden">
-                                                {billState.images?.map(
-                                                    (img, index) => (
-                                                        <Deletable
-                                                            // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                                                            key={index}
-                                                            onDelete={() => {
-                                                                setBillState(
-                                                                    (v) => ({
-                                                                        ...v,
-                                                                        images: v.images?.filter(
-                                                                            (
-                                                                                m,
-                                                                            ) =>
-                                                                                m !==
-                                                                                img,
-                                                                        ),
-                                                                    }),
-                                                                );
-                                                            }}
-                                                        >
-                                                            <SmartImage
-                                                                source={img}
-                                                                alt=""
-                                                                className="w-6 h-6 object-cover rounded"
-                                                            />
-                                                        </Deletable>
-                                                    ),
-                                                )}
+                            {/* 工具栏 */}
+                            <div className="flex items-center gap-1 h-11">
+                                {/* 左侧工具组 */}
+                                <div className="flex items-center gap-1">
+                                    {/* 图片 */}
+                                    <div className="flex items-center">
+                                        {(billState.images?.length ?? 0) > 0 && (
+                                            <div className="pr-1 flex gap-1 items-center overflow-x-auto max-w-20 h-full scrollbar-hidden">
+                                                {billState.images?.map((img, index) => (
+                                                    <Deletable
+                                                        // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                                                        key={index}
+                                                        onDelete={() => {
+                                                            setBillState((v) => ({
+                                                                ...v,
+                                                                images: v.images?.filter((m) => m !== img),
+                                                            }));
+                                                        }}
+                                                    >
+                                                        <SmartImage
+                                                            source={img}
+                                                            alt=""
+                                                            className="w-7 h-7 object-cover rounded-md"
+                                                        />
+                                                    </Deletable>
+                                                ))}
                                             </div>
                                         )}
-                                        {(billState.images?.length ?? 0) <
-                                            3 && (
+                                        {(billState.images?.length ?? 0) < 3 && (
                                             <button
                                                 type="button"
-                                                className="px-1 flex justify-center items-center rounded-full transition-all cursor-pointer"
+                                                className="flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                                                 onClick={chooseImage}
                                             >
-                                                <i className="icon-xs icon-[mdi--image-plus-outline] text-[white]"></i>
+                                                <i className="icon-[mdi--image-plus-outline] text-white text-lg" />
+                                                <span className="text-[10px] text-white/60">{t("photo")}</span>
                                             </button>
                                         )}
                                     </div>
-                                    <div className="h-full flex items-center">
+
+                                    {/* 位置 */}
+                                    <div className="flex items-center">
                                         {billState?.location ? (
                                             <Deletable
                                                 onDelete={() => {
-                                                    setBillState((prev) => {
-                                                        return {
-                                                            ...prev,
-                                                            location: undefined,
-                                                        };
-                                                    });
+                                                    setBillState((prev) => ({
+                                                        ...prev,
+                                                        location: undefined,
+                                                    }));
                                                 }}
                                             >
-                                                <i className="w-5 icon-[mdi--location-radius]"></i>
+                                                <div className="flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px]">
+                                                    <i className="icon-[mdi--location-radius] text-white text-lg" />
+                                                    <span className="text-[10px] text-white/60">{t("location")}</span>
+                                                </div>
                                             </Deletable>
                                         ) : (
                                             <CurrentLocation
                                                 ref={locationRef}
-                                                className="px-1 flex items-center justify-center"
+                                                className="flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                                                 onValueChange={(v) => {
-                                                    setBillState((prev) => {
-                                                        return {
-                                                            ...prev,
-                                                            location: v,
-                                                        };
-                                                    });
+                                                    setBillState((prev) => ({
+                                                        ...prev,
+                                                        location: v,
+                                                    }));
                                                 }}
                                             >
-                                                <i className="icon-[mdi--add-location]" />
+                                                <i className="icon-[mdi--add-location] text-white text-lg" />
+                                                <span className="text-[10px] text-white/60">{t("location")}</span>
                                             </CurrentLocation>
                                         )}
                                     </div>
-                                    <div className="rounded-full transition-all hover:(bg-stone-700) active:(bg-stone-500)">
+
+                                    {/* 时间 */}
+                                    <div className="rounded-lg hover:bg-white/10 transition-colors">
                                         <DatePicker
                                             fixedTime
                                             value={billState.time}
                                             onChange={(time) => {
                                                 setBillState((prev) => {
                                                     if (!prev.currency) {
-                                                        return {
-                                                            ...prev,
-                                                            time: time,
-                                                        };
+                                                        return { ...prev, time };
                                                     }
                                                     const { predict } = convert(
-                                                        amountToNumber(
-                                                            prev.currency
-                                                                ?.amount ??
-                                                                prev.amount,
-                                                        ),
+                                                        amountToNumber(prev.currency?.amount ?? prev.amount),
                                                         prev.currency.target,
                                                         baseCurrency.id,
                                                         time,
                                                     );
                                                     return {
                                                         ...prev,
-                                                        time: time,
-                                                        amount: numberToAmount(
-                                                            predict,
-                                                        ),
+                                                        time,
+                                                        amount: numberToAmount(predict),
                                                         currency: {
                                                             base: baseCurrency.id,
-                                                            target: prev
-                                                                .currency
-                                                                .target,
-                                                            amount:
-                                                                prev.currency
-                                                                    ?.amount ??
-                                                                prev.amount,
+                                                            target: prev.currency.target,
+                                                            amount: prev.currency?.amount ?? prev.amount,
                                                         },
                                                     };
                                                 });
                                             }}
-                                        />
+                                        >
+                                            <i className="icon-[mdi--calendar-clock] text-white/80 text-base mr-0.5" />
+                                        </DatePicker>
                                     </div>
                                 </div>
+
+                                {/* 右侧备注输入 */}
                                 <RemarkHint
                                     recommends={predictComments}
                                     onSelect={(v) => {
@@ -616,7 +654,7 @@ export default function EditorForm({
                                         }));
                                     }}
                                 >
-                                    <div className="flex h-full flex-1">
+                                    <div className="flex flex-1 h-11 items-center">
                                         <IOSUnscrolledInput
                                             value={billState.comment}
                                             onChange={(e) => {
@@ -626,7 +664,7 @@ export default function EditorForm({
                                                 }));
                                             }}
                                             type="text"
-                                            className="w-full bg-transparent text-white text-right placeholder-opacity-50 outline-none"
+                                            className="w-full bg-transparent text-white text-right placeholder-opacity-50 outline-none text-sm"
                                             placeholder={t("comment")}
                                             enterKeyHint="done"
                                         />
@@ -634,12 +672,14 @@ export default function EditorForm({
                                 </RemarkHint>
                             </div>
 
+                            {/* 确认按钮 */}
                             <button
                                 type="button"
-                                className="flex h-[80px] min-h-[48px] justify-center items-center bg-green-700 rounded-lg font-bold text-lg cursor-pointer"
+                                className="flex h-14 justify-center items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded-2xl font-bold text-base cursor-pointer transition-all duration-150 shadow-lg shadow-emerald-900/40 active:scale-[0.98]"
                                 onClick={toConfirm}
                             >
-                                <i className="icon-[mdi--check] icon-md"></i>
+                                <i className="icon-[mdi--check-circle-outline] text-xl" />
+                                <span>{t("confirm")}</span>
                             </button>
                             <Calculator.Keyboard
                                 className={cn("flex-1")}

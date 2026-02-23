@@ -56,6 +56,7 @@ export default function Page() {
                 : "icon-[mdi--cloud-remove-outline] text-red-600";
 
     const [currentDate, setCurrentDate] = useState(dayjs());
+    const [homeScope, setHomeScope] = useState<"me" | "all">("me");
     const ledgerRef = useRef<any>(null);
 
     const currentDateBills = useMemo(() => {
@@ -73,6 +74,49 @@ export default function Page() {
             }, 0),
         );
     }, [currentDateBills]);
+
+    const filteredBills = useMemo(() => {
+        return homeScope === "me"
+            ? bills.filter((b) => String(b.creatorId) === String(userId))
+            : bills;
+    }, [bills, homeScope, userId]);
+
+    const sumByType = (
+        list: typeof bills,
+        type: "expense" | "income",
+    ) =>
+        amountToNumber(
+            list
+                .filter((b) => b.type === type)
+                .reduce((p, c) => p + c.amount, 0),
+        );
+
+    const todayBills = useMemo(
+        () =>
+            filterOrderedBillListByTimeRange(filteredBills, [
+                currentDate.startOf("day"),
+                currentDate.endOf("day"),
+            ]),
+        [filteredBills, currentDate],
+    );
+
+    const monthBills = useMemo(
+        () =>
+            filterOrderedBillListByTimeRange(filteredBills, [
+                currentDate.startOf("month"),
+                currentDate.endOf("month"),
+            ]),
+        [filteredBills, currentDate],
+    );
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const todayExpense = useMemo(() => sumByType(todayBills, "expense"), [todayBills]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const todayIncome = useMemo(() => sumByType(todayBills, "income"), [todayBills]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const monthExpense = useMemo(() => sumByType(monthBills, "expense"), [monthBills]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const monthIncome = useMemo(() => sumByType(monthBills, "income"), [monthBills]);
 
     const { budgets: allBudgets } = useBudget();
     const budgets = allBudgets.filter((b) => {
@@ -130,23 +174,95 @@ export default function Page() {
     return (
         <div className="w-full h-full p-2 flex flex-col overflow-hidden page-show">
             <div className="flex flex-wrap flex-col w-full gap-2">
-                <div className="bg-stone-800 text-background dark:bg-foreground/20 dark:text-foreground relative h-20 w-full flex justify-end rounded-lg sm:flex-1 p-4">
-                    <span className="absolute top-2 left-4">
-                        {denseDate(currentDate)}
-                    </span>
-                    <AnimatedNumber
-                        value={currentDateAmount}
-                        className="font-bold text-4xl "
-                    />
+                <div className="bg-stone-900 text-white w-full rounded-xl p-3.5 flex flex-col gap-2.5 sm:flex-1">
+                    {/* 日期 + 仅自己/全家切换 */}
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs text-white/50">
+                            {denseDate(currentDate)}
+                        </span>
+                        <div className="flex bg-white/8 rounded-full p-0.5 text-[11px] gap-0.5 cursor-pointer">
+                            <button
+                                type="button"
+                                onClick={() => setHomeScope("me")}
+                                className={cn(
+                                    "px-2.5 py-0.5 rounded-full transition-colors duration-150",
+                                    homeScope === "me"
+                                        ? "bg-white/18 text-white"
+                                        : "text-white/40 hover:text-white/60",
+                                )}
+                            >
+                                {t("only-me")}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setHomeScope("all")}
+                                className={cn(
+                                    "px-2.5 py-0.5 rounded-full transition-colors duration-150",
+                                    homeScope === "all"
+                                        ? "bg-white/18 text-white"
+                                        : "text-white/40 hover:text-white/60",
+                                )}
+                            >
+                                {t("all-members")}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 四项统计：今日支出/收入 | 本月支出/收入 */}
+                    <div className="flex items-center gap-3">
+                        <div className="flex gap-3 flex-1">
+                            <div className="flex-1 min-w-0">
+                                <div className="text-[10px] text-white/40 mb-0.5">
+                                    {t("today-expense")}
+                                </div>
+                                <AnimatedNumber
+                                    value={todayExpense}
+                                    className="text-base font-bold text-rose-300 tabular-nums"
+                                />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-[10px] text-white/40 mb-0.5">
+                                    {t("today-income")}
+                                </div>
+                                <AnimatedNumber
+                                    value={todayIncome}
+                                    className="text-base font-bold text-emerald-300 tabular-nums"
+                                />
+                            </div>
+                        </div>
+                        <div className="w-px self-stretch bg-white/10 my-0.5" />
+                        <div className="flex gap-3 flex-1">
+                            <div className="flex-1 min-w-0">
+                                <div className="text-[10px] text-white/40 mb-0.5">
+                                    {t("month-expense")}
+                                </div>
+                                <AnimatedNumber
+                                    value={monthExpense}
+                                    className="text-base font-bold text-rose-300/70 tabular-nums"
+                                />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-[10px] text-white/40 mb-0.5">
+                                    {t("month-income")}
+                                </div>
+                                <AnimatedNumber
+                                    value={monthIncome}
+                                    className="text-base font-bold text-emerald-300/70 tabular-nums"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 账本名 */}
                     {currentBook && (
                         <button
                             type="button"
-                            className="absolute bottom-2 left-4 text-xs opacity-60 flex items-center gap-1 cursor-pointer"
+                            className="text-[10px] text-white/35 flex items-center gap-1 cursor-pointer w-fit hover:text-white/55 transition-colors duration-150"
                             onClick={() => {
                                 showBookGuide();
                             }}
                         >
-                            <i className="icon-[mdi--book]"></i>
+                            <i className="icon-[mdi--book-outline]"></i>
                             {currentBook.name}
                         </button>
                     )}
