@@ -5,6 +5,7 @@ import type { BillType } from "@/ledger/type";
 import { useIntl } from "@/locale";
 import { useLedgerStore } from "@/store/ledger";
 import { useReceiptStore } from "@/store/receipt";
+import { TagListProvider } from "../bill-tag";
 import { Button } from "../ui/button";
 import { CandidateRecordItem } from "./candidate-item";
 import type { CandidateBill } from "./types";
@@ -334,6 +335,9 @@ export function BatchConfirmation() {
                     )}
                 </div>
             </div>
+
+            {/* Tag Editor Provider */}
+            <TagListProvider />
 
             {/* Image Fullscreen Modal */}
             {selectedImageIndex !== null && (

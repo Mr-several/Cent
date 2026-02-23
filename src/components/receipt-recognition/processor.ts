@@ -3,9 +3,11 @@ import { toast } from "sonner";
 import { getOCRProvider } from "@/api/ocr";
 import useCategory from "@/hooks/use-category";
 import { useIntl } from "@/locale";
+import { useLedgerStore } from "@/store/ledger";
 import { usePreferenceStore } from "@/store/preference";
 import { useReceiptStore } from "@/store/receipt";
 import { parseReceiptImage, parseReceiptText } from "./ai-parser";
+import { applyMerchantMemory } from "./merchant-memory";
 import type { CandidateBill } from "./types";
 
 export type ProcessingStatus = {
@@ -43,9 +45,18 @@ export async function processReceiptImages(
 
             if (mode === "vision-ai") {
                 // 视觉模型模式：跳过 OCR，直接将图片发给视觉模型
-                onStatusChange?.({ stage: "vision", imageIndex: i, totalImages: images.length });
+                onStatusChange?.({
+                    stage: "vision",
+                    imageIndex: i,
+                    totalImages: images.length,
+                });
                 const aiStartTime = Date.now();
-                candidates = await parseReceiptImage(image, i, categories, configId);
+                candidates = await parseReceiptImage(
+                    image,
+                    i,
+                    categories,
+                    configId,
+                );
                 const aiDuration = Date.now() - aiStartTime;
                 console.log(
                     `[性能] 图片${i + 1} 视觉模型耗时: ${aiDuration}ms (${(aiDuration / 1000).toFixed(1)}秒)`,
@@ -56,7 +67,11 @@ export async function processReceiptImages(
 
                 // Step 1: OCR
                 const ocrStartTime = Date.now();
-                onStatusChange?.({ stage: "ocr", imageIndex: i, totalImages: images.length });
+                onStatusChange?.({
+                    stage: "ocr",
+                    imageIndex: i,
+                    totalImages: images.length,
+                });
                 const ocrText = await ocrProvider.recognize(image);
                 const ocrDuration = Date.now() - ocrStartTime;
                 console.log(
@@ -70,8 +85,17 @@ export async function processReceiptImages(
 
                 // Step 2: AI 解析
                 const aiStartTime = Date.now();
-                onStatusChange?.({ stage: "ai", imageIndex: i, totalImages: images.length });
-                candidates = await parseReceiptText(ocrText, i, categories, configId);
+                onStatusChange?.({
+                    stage: "ai",
+                    imageIndex: i,
+                    totalImages: images.length,
+                });
+                candidates = await parseReceiptText(
+                    ocrText,
+                    i,
+                    categories,
+                    configId,
+                );
                 const aiDuration = Date.now() - aiStartTime;
                 console.log(
                     `[性能] 图片${i + 1} AI解析耗时: ${aiDuration}ms (${(aiDuration / 1000).toFixed(1)}秒)`,
@@ -88,7 +112,10 @@ export async function processReceiptImages(
                 continue;
             }
 
-            allCandidates.push(...candidates);
+            // 应用商户记忆：AI 产出结构化内容后，用历史映射覆盖分类
+            const memory =
+                useLedgerStore.getState().infos?.meta.merchantMemory ?? {};
+            allCandidates.push(...applyMerchantMemory(candidates, memory));
         } catch (error) {
             console.error(`[错误] 图片${i + 1}处理失败:`, error);
             toast.error(
@@ -109,7 +136,8 @@ export async function processReceiptImages(
  */
 export function useReceiptRecognition() {
     const [isProcessing, setIsProcessing] = useState(false);
-    const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>(null);
+    const [processingStatus, setProcessingStatus] =
+        useState<ProcessingStatus>(null);
     const { startSession, addCandidates, setProcessingDuration } =
         useReceiptStore();
     const { categories } = useCategory();

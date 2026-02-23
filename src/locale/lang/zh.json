@@ -749,5 +749,12 @@
   "receipt-processing-image": "正在处理第 {current}/{total} 张图片",
   "receipt-duplicate-warning": "检测到 {date} 已有相同商户「{merchant}」、金额 {amount} 的记录，可能是重复账单。确认继续添加吗？",
   "receipt-possible-duplicate": "检测到 {date} 已有相同金额 {amount} 的记录，可能是重复账单。确认继续添加吗？",
-  "receipt-confirm-all-duplicate-warning": "待确认记录中有 {count} 条与已有账单的日期和金额相同，可能存在重复。确认继续全部提交吗？"
+  "receipt-confirm-all-duplicate-warning": "待确认记录中有 {count} 条与已有账单的日期和金额相同，可能存在重复。确认继续全部提交吗？",
+  "receipt-memory-suggestions": "分类建议",
+  "receipt-memory-ai-label": "AI 推断",
+  "receipt-memory-times": "× {count}",
+  "receipt-tags-label": "标签",
+  "receipt-tags-edit": "编辑标签",
+  "receipt-tags-recent": "最近使用",
+  "receipt-category-edit": "编辑分类"
 }

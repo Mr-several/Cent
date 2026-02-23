@@ -29,6 +29,8 @@ type State = {
     receiptRecognitionMode?: "ocr-ai" | "vision-ai";
     /** 识图记账使用的 AI 配置 ID，为空时回退到默认 AI 助手配置 */
     receiptAIConfigId?: string;
+    /** 识图记账中最近使用的 tagId 列表（最新在前，最多保留 30 条），用于快速选标签 */
+    recentReceiptTagIds?: string[];
     /** relayr中转服务配置 */
     relayr?: {
         enable?: boolean;

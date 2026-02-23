@@ -1,4 +1,4 @@
-import type { Amount, BillType } from "@/ledger/type";
+import type { Amount, BillType, MerchantCategoryRecord } from "@/ledger/type";
 
 /**
  * Candidate Bill - A bill record extracted from receipt image
@@ -27,6 +27,17 @@ export type CandidateBill = {
 
     /** Attach original image to this bill */
     attachImage?: boolean;
+
+    /**
+     * Merchant memory suggestions sorted by count desc.
+     * Populated after AI parsing when the merchant has historical category records.
+     */
+    memorySuggestions?: MerchantCategoryRecord[];
+    /**
+     * The original categoryId inferred by AI before merchant memory is applied.
+     * Used to render the AI suggestion chip at the end of suggestion list.
+     */
+    aiCategoryId?: string;
 
     /** Raw data for debugging */
     rawText?: string;

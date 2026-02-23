@@ -737,5 +737,12 @@
   "receipt-processing-image": "Processing image {current} of {total}",
   "receipt-duplicate-warning": "A record from {date} with the same merchant \"{merchant}\" and amount {amount} already exists. This may be a duplicate. Continue adding?",
   "receipt-possible-duplicate": "A record from {date} with the same amount {amount} already exists. This may be a duplicate. Continue adding?",
-  "receipt-confirm-all-duplicate-warning": "{count} pending record(s) have the same date and amount as existing bills and may be duplicates. Continue confirming all?"
+  "receipt-confirm-all-duplicate-warning": "{count} pending record(s) have the same date and amount as existing bills and may be duplicates. Continue confirming all?",
+  "receipt-memory-suggestions": "Suggestions",
+  "receipt-memory-ai-label": "AI",
+  "receipt-memory-times": "× {count}",
+  "receipt-tags-label": "Tags",
+  "receipt-tags-edit": "Edit Tags",
+  "receipt-tags-recent": "Recent",
+  "receipt-category-edit": "Edit Categories"
 }

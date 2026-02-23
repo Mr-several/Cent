@@ -104,6 +104,22 @@ export type BillTag = {
     preferCurrency?: string;
 };
 
+/** 商户在某个分类下的使用记录 */
+export type MerchantCategoryRecord = {
+    categoryId: string;
+    /** 该分类被使用的次数 */
+    count: number;
+    /** 最近一次使用的时间戳 */
+    lastUsed: number;
+};
+
+/**
+ * 商户记忆：记录"商户名 → 各分类使用次数"的映射
+ * key 为标准化后的商户名（trim + toLowerCase）
+ * value 为该商户下各分类的计数数组，按 count 降序排列
+ */
+export type MerchantMemory = Record<string, MerchantCategoryRecord[]>;
+
 // 全局文件配置
 export type GlobalMeta = {
     // 自定义过滤器，可以略过
@@ -124,6 +140,8 @@ export type GlobalMeta = {
         amapKey?: string;
         amapSecurityCode?: string;
     };
+    /** 商户记忆：存储商户与分类的历史映射，用于识图记账自动填充分类 */
+    merchantMemory?: MerchantMemory;
 };
 
 // 这是最终导出的核心JSON数据结构，使用这个数据结构可以直接被解析成可以识别的数据

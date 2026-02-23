@@ -2,14 +2,22 @@ import dayjs from "dayjs";
 import { useState } from "react";
 import { toast } from "sonner";
 import CategoryIcon from "@/components/category/icon";
+import { DatePicker } from "@/components/date-picker";
 import useCategory from "@/hooks/use-category";
 import { useTag } from "@/hooks/use-tag";
 import { amountToNumber, numberToAmount } from "@/ledger/bill";
-import type { BillCategory, BillType } from "@/ledger/type";
+import type {
+    BillCategory,
+    BillType,
+    MerchantCategoryRecord,
+} from "@/ledger/type";
 import { useIntl } from "@/locale";
 import { useLedgerStore } from "@/store/ledger";
+import { usePreferenceStore } from "@/store/preference";
 import { useReceiptStore } from "@/store/receipt";
 import { cn } from "@/utils";
+import { showCategoryList } from "../category";
+import { showTagList } from "../bill-tag";
 import { Button } from "../ui/button";
 import type { CandidateBill } from "./types";
 
@@ -20,6 +28,131 @@ interface CandidateRecordItemProps {
 }
 
 type TreeCategory = BillCategory & { children: BillCategory[] };
+
+/**
+ * 商户记忆分类建议 Chip 列表
+ * 展示历史记忆分类（按使用次数降序）+ AI 推断分类（末尾）
+ * 点击任意 Chip 直接切换当前分类选择
+ */
+function MerchantMemorySuggestions({
+    memorySuggestions,
+    aiCategoryId,
+    selectedCategoryId,
+    type,
+    onSelect,
+    disabled,
+}: {
+    memorySuggestions: MerchantCategoryRecord[];
+    aiCategoryId?: string;
+    selectedCategoryId?: string;
+    type: BillType;
+    onSelect: (categoryId: string) => void;
+    disabled?: boolean;
+}) {
+    const { expenses, incomes } = useCategory();
+    const t = useIntl();
+
+    const allCategories =
+        type === "expense"
+            ? expenses.flatMap((p) => [p, ...p.children])
+            : incomes.flatMap((p) => [p, ...p.children]);
+
+    const findCategory = (id: string) => allCategories.find((c) => c.id === id);
+
+    // 去掉与记忆重复的 AI 分类（如果 AI 和最高频记忆一致，不重复显示）
+    const aiIsAlreadyInMemory = memorySuggestions.some(
+        (r) => r.categoryId === aiCategoryId,
+    );
+    const showAiChip = aiCategoryId && !aiIsAlreadyInMemory;
+
+    return (
+        <div className="mb-1 space-y-1">
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <i className="icon-[mdi--brain] text-xs" />
+                {t("receipt-memory-suggestions")}
+            </p>
+            {/* 横向可滚动 Chip 列表，touch 优化 */}
+            <div
+                className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none"
+                style={{ touchAction: "pan-x" }}
+            >
+                {memorySuggestions.map((record) => {
+                    const cat = findCategory(record.categoryId);
+                    if (!cat) return null;
+                    const isSelected = selectedCategoryId === record.categoryId;
+                    return (
+                        <button
+                            key={record.categoryId}
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => onSelect(record.categoryId)}
+                            className={cn(
+                                "flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium",
+                                "min-h-[32px] border transition-colors duration-150 cursor-pointer",
+                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                isSelected
+                                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                    : "bg-muted/60 text-foreground border-border hover:bg-muted hover:border-muted-foreground/40",
+                                disabled && "opacity-50 cursor-not-allowed",
+                            )}
+                        >
+                            <CategoryIcon
+                                icon={cat.icon}
+                                className="w-3.5 h-3.5 flex-shrink-0"
+                            />
+                            <span>{cat.name}</span>
+                            {record.count >= 2 && (
+                                <span
+                                    className={cn(
+                                        "text-[10px] font-normal",
+                                        isSelected
+                                            ? "text-primary-foreground/70"
+                                            : "text-muted-foreground",
+                                    )}
+                                >
+                                    {t("receipt-memory-times", {
+                                        count: record.count,
+                                    })}
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
+
+                {/* AI 推断 Chip —— 固定在末尾，虚线琥珀色风格 */}
+                {showAiChip &&
+                    (() => {
+                        const cat = findCategory(aiCategoryId);
+                        if (!cat) return null;
+                        const isSelected = selectedCategoryId === aiCategoryId;
+                        return (
+                            <button
+                                key="ai-inferred"
+                                type="button"
+                                disabled={disabled}
+                                onClick={() => onSelect(aiCategoryId)}
+                                className={cn(
+                                    "flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium",
+                                    "min-h-[32px] border border-dashed transition-colors duration-150 cursor-pointer",
+                                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                    isSelected
+                                        ? "bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500"
+                                        : "bg-amber-500/5 text-amber-600 dark:text-amber-500 border-amber-500/50 hover:bg-amber-500/10 hover:border-amber-500/70",
+                                    disabled && "opacity-50 cursor-not-allowed",
+                                )}
+                            >
+                                <i className="icon-[mdi--auto-fix] w-3.5 h-3.5 flex-shrink-0" />
+                                <span>{cat.name}</span>
+                                <span className="text-[10px] font-normal opacity-70">
+                                    {t("receipt-memory-ai-label")}
+                                </span>
+                            </button>
+                        );
+                    })()}
+            </div>
+        </div>
+    );
+}
 
 /** 内联分类选择器，支持父类+子类两级展示和折叠 */
 function CategoryPicker({
@@ -181,7 +314,16 @@ export function CandidateRecordItem({
 }: CandidateRecordItemProps) {
     const { updateCandidate, deleteCandidate, confirmCandidate } =
         useReceiptStore();
-    const { tags: allTags } = useTag();
+    const { tags: allTags, grouped: tagGrouped } = useTag();
+    const recentReceiptTagIdsRaw = usePreferenceStore(
+        (s) => s.recentReceiptTagIds,
+    );
+    const recentReceiptTagIds = recentReceiptTagIdsRaw ?? [];
+    // 无历史记录时，回退展示全部可用标签前 5 个
+    const quickTagIds =
+        recentReceiptTagIds.length > 0
+            ? recentReceiptTagIds.slice(0, 5)
+            : allTags.slice(0, 5).map((tag) => tag.id);
     const t = useIntl();
 
     const [isConfirming, setIsConfirming] = useState(false);
@@ -194,13 +336,6 @@ export function CandidateRecordItem({
         const num = Number.parseFloat(value);
         if (!Number.isNaN(num)) {
             handleFieldChange("amount", numberToAmount(num));
-        }
-    };
-
-    const handleTimeChange = (value: string) => {
-        const timestamp = dayjs(value).valueOf();
-        if (!Number.isNaN(timestamp)) {
-            handleFieldChange("time", timestamp);
         }
     };
 
@@ -334,29 +469,31 @@ export function CandidateRecordItem({
 
             {/* Form Fields */}
             <div className="space-y-3">
-                {/* Type */}
+                {/* Type — pill toggle */}
                 <div className="flex items-center gap-2">
-                    <label
-                        htmlFor={`type-${candidate.tempId}`}
-                        className="text-sm min-w-[80px]"
-                    >
-                        {t("type")}:
-                    </label>
-                    <select
-                        id={`type-${candidate.tempId}`}
-                        value={billType}
-                        onChange={(e) =>
-                            handleFieldChange(
-                                "type",
-                                e.target.value as BillType,
-                            )
-                        }
-                        disabled={isConfirmed}
-                        className="flex-1 px-2 py-1 border rounded text-sm"
-                    >
-                        <option value="expense">{t("expense")}</option>
-                        <option value="income">{t("income")}</option>
-                    </select>
+                    <span className="text-sm min-w-[80px]">{t("type")}:</span>
+                    <div className="flex gap-1.5">
+                        {(["expense", "income"] as BillType[]).map((t_) => (
+                            <button
+                                key={t_}
+                                type="button"
+                                disabled={isConfirmed}
+                                onClick={() => handleFieldChange("type", t_)}
+                                className={cn(
+                                    "px-3 py-1 rounded-full text-xs font-medium border transition-colors",
+                                    billType === t_
+                                        ? t_ === "expense"
+                                            ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/50"
+                                            : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/50"
+                                        : "bg-muted/40 text-muted-foreground border-border hover:bg-muted/70",
+                                    isConfirmed &&
+                                        "opacity-50 cursor-not-allowed",
+                                )}
+                            >
+                                {t(t_)}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Amount */}
@@ -422,37 +559,143 @@ export function CandidateRecordItem({
                     <span className="text-sm min-w-[80px] mt-2">
                         {t("category")}:
                     </span>
-                    <CategoryPicker
-                        value={candidate.categoryId}
-                        onChange={(id) => handleFieldChange("categoryId", id)}
-                        type={billType}
-                        disabled={isConfirmed}
-                    />
+                    <div className="flex-1 space-y-1.5">
+                        {/* 商户记忆分类建议 Chip（仅当商户有历史记忆时展示） */}
+                        {candidate.memorySuggestions &&
+                            candidate.memorySuggestions.length > 0 && (
+                                <MerchantMemorySuggestions
+                                    memorySuggestions={
+                                        candidate.memorySuggestions
+                                    }
+                                    aiCategoryId={candidate.aiCategoryId}
+                                    selectedCategoryId={candidate.categoryId}
+                                    type={billType}
+                                    onSelect={(id) =>
+                                        handleFieldChange("categoryId", id)
+                                    }
+                                    disabled={isConfirmed}
+                                />
+                            )}
+                        <CategoryPicker
+                            value={candidate.categoryId}
+                            onChange={(id) =>
+                                handleFieldChange("categoryId", id)
+                            }
+                            type={billType}
+                            disabled={isConfirmed}
+                        />
+                        {/* 编辑分类入口 — 风格与编辑标签保持一致 */}
+                        {!isConfirmed && (
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => showCategoryList(billType)}
+                                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border border-dashed text-muted-foreground hover:text-foreground hover:border-muted-foreground/60 transition-colors cursor-pointer"
+                                >
+                                    <i className="icon-[mdi--pencil-outline] w-3.5 h-3.5" />
+                                    {t("receipt-category-edit")}
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Time */}
+                {/* Time — DatePicker */}
                 <div className="flex items-center gap-2">
-                    <label
-                        htmlFor={`time-${candidate.tempId}`}
-                        className="text-sm min-w-[80px]"
+                    <span className="text-sm min-w-[80px]">{t("time")}:</span>
+                    <div
+                        className={cn(
+                            "flex-1 px-3 py-1.5 border rounded-lg text-sm transition-colors",
+                            isConfirmed
+                                ? "opacity-60 cursor-not-allowed bg-muted"
+                                : "hover:bg-muted/40 cursor-pointer",
+                        )}
                     >
-                        {t("time")}:
-                    </label>
-                    <input
-                        id={`time-${candidate.tempId}`}
-                        type="datetime-local"
-                        value={
-                            candidate.time
-                                ? dayjs(candidate.time).format(
-                                      "YYYY-MM-DDTHH:mm",
-                                  )
-                                : dayjs().format("YYYY-MM-DDTHH:mm")
-                        }
-                        onChange={(e) => handleTimeChange(e.target.value)}
-                        disabled={isConfirmed}
-                        className="flex-1 px-2 py-1 border rounded text-sm"
-                    />
+                        <DatePicker
+                            fixedTime
+                            value={candidate.time ?? Date.now()}
+                            onChange={(ts) => handleFieldChange("time", ts)}
+                            displayFormatter={(d) =>
+                                d?.format("YYYY/MM/DD HH:mm") ?? ""
+                            }
+                        />
+                    </div>
                 </div>
+
+                {/* Tags — 最近使用快选（最多5个）+ 编辑按钮 */}
+                {allTags.length > 0 && (
+                    <div className="flex items-start gap-2">
+                        <span className="text-sm min-w-[80px] mt-1.5">
+                            {t("receipt-tags-label")}:
+                        </span>
+                        <div
+                            className="flex-1 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none flex-wrap"
+                            style={{ touchAction: "pan-x" }}
+                        >
+                            {/* 最近使用的 tag（最多5条），无历史时回退展示全部标签前5个 */}
+                            {quickTagIds.map((tagId) => {
+                                const tag = allTags.find(
+                                    (tg) => tg.id === tagId,
+                                );
+                                if (!tag) return null;
+                                const group = tagGrouped.find((g) =>
+                                    g.tagIds?.includes(tagId),
+                                );
+                                const color = group?.color ?? "gray";
+                                const isSelected = (
+                                    candidate.tagIds ?? []
+                                ).includes(tagId);
+                                return (
+                                    <button
+                                        key={tagId}
+                                        type="button"
+                                        disabled={isConfirmed}
+                                        onClick={() => {
+                                            const current =
+                                                candidate.tagIds ?? [];
+                                            handleFieldChange(
+                                                "tagIds",
+                                                isSelected
+                                                    ? current.filter(
+                                                          (id) => id !== tagId,
+                                                      )
+                                                    : [...current, tagId],
+                                            );
+                                        }}
+                                        className={cn(
+                                            "flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors",
+                                            `with-tag-color tag-${color}`,
+                                            isSelected
+                                                ? "bg-[var(--current-tag-color)]/15 text-[var(--current-tag-color)] border-[var(--current-tag-color)]/60"
+                                                : "bg-muted/40 text-muted-foreground border-border hover:bg-muted/70",
+                                            isConfirmed &&
+                                                "opacity-50 cursor-not-allowed",
+                                        )}
+                                    >
+                                        <span
+                                            className={cn(
+                                                "w-2 h-2 rounded-full bg-[var(--current-tag-color)] flex-shrink-0",
+                                                !isSelected && "opacity-40",
+                                            )}
+                                        />
+                                        #{tag.name}
+                                    </button>
+                                );
+                            })}
+                            {/* 编辑标签按钮 */}
+                            {!isConfirmed && (
+                                <button
+                                    type="button"
+                                    onClick={() => showTagList()}
+                                    className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border border-dashed text-muted-foreground hover:text-foreground hover:border-muted-foreground/60 transition-colors"
+                                >
+                                    <i className="icon-[mdi--tag-plus-outline] w-3.5 h-3.5" />
+                                    {t("receipt-tags-edit")}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Comment */}
                 <div className="flex items-center gap-2">

@@ -1,11 +1,13 @@
 import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
+import { saveMerchantMemoryEntry } from "@/components/receipt-recognition/merchant-memory";
 import type {
     CandidateBill,
     RecognitionSession,
 } from "@/components/receipt-recognition/types";
 import type { Bill } from "@/ledger/type";
 import { useLedgerStore } from "@/store/ledger";
+import { usePreferenceStore } from "@/store/preference";
 import { useUserStore } from "@/store/user";
 
 interface ReceiptStore {
@@ -119,6 +121,25 @@ export const useReceiptStore = create<ReceiptStore>((set, get) => ({
 
         // Save to database
         await useLedgerStore.getState().addBill(bill);
+
+        // 保存商户记忆：将本次确认的商户→分类映射写入 GlobalMeta
+        if (candidate.merchant && candidate.categoryId) {
+            await saveMerchantMemoryEntry(
+                candidate.merchant,
+                candidate.categoryId,
+            );
+        }
+
+        // 更新识图记账最近使用标签
+        if (candidate.tagIds && candidate.tagIds.length > 0) {
+            const prev =
+                usePreferenceStore.getState().recentReceiptTagIds ?? [];
+            const updated = [
+                ...candidate.tagIds,
+                ...prev.filter((id) => !candidate.tagIds!.includes(id)),
+            ].slice(0, 30);
+            usePreferenceStore.setState({ recentReceiptTagIds: updated });
+        }
 
         // Update candidate status
         get().updateCandidate(tempId, { status: "confirmed" });
