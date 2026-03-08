@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import type { ECElementEvent } from "echarts/core";
 import { Switch } from "radix-ui";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
@@ -15,7 +14,6 @@ import {
 import { showBillInfo } from "@/components/bill-info";
 import BillItem from "@/components/ledger/item";
 import { showSortableList } from "@/components/sortable";
-import Chart, { type ECOption } from "@/components/chart";
 import { AnalysisCloud } from "@/components/stat/analysic-cloud";
 import { AnalysisDetail } from "@/components/stat/analysis-detail";
 import AnalysisMap from "@/components/stat/analysis-map";
@@ -61,12 +59,6 @@ type CategoryComparison = {
     name: string;
     delta: number;
   }[];
-};
-
-type CategoryDeltaChartItem = {
-  id: string;
-  name: string;
-  delta: number;
 };
 
 const getRangeShiftedBy = (
@@ -331,6 +323,34 @@ export default function Page() {
       };
     }, [filtered]);
 
+  const [topPercent, setTopPercent] = useState(20);
+  const topBills = useMemo(() => {
+    const threshold = topPercent / 100;
+    const sortAndAccumulate = (bills: Bill[]) => {
+      const sorted = [...bills].sort((a, b) => b.amount - a.amount);
+      const totalAmount = sorted.reduce((s, b) => s + b.amount, 0);
+      const target = totalAmount * threshold;
+      const top: Bill[] = [];
+      let accumulated = 0;
+      for (const bill of sorted) {
+        top.push(bill);
+        accumulated += bill.amount;
+        if (accumulated >= target) break;
+      }
+      return { top, totalAmount, accumulated };
+    };
+    return {
+      expense:
+        focusType !== "income"
+          ? sortAndAccumulate(filteredExpenseBills)
+          : null,
+      income:
+        focusType !== "expense"
+          ? sortAndAccumulate(filteredIncomeBills)
+          : null,
+    };
+  }, [filteredExpenseBills, filteredIncomeBills, topPercent, focusType]);
+
   const aggregateCategoryTotals = useMemo(() => {
     const categoryMap = new Map(
       categories.map((category) => [category.id, category]),
@@ -421,88 +441,14 @@ export default function Page() {
     });
   };
 
-  const buildRankingChartOption = (
-    comparison: CategoryComparison,
-  ): ECOption | undefined => {
-    const merged = [...comparison.topIncrease, ...comparison.topDecrease];
-    if (merged.length === 0) {
-      return undefined;
-    }
-    const data = [...merged].sort((a, b) => b.delta - a.delta);
-    return {
-      grid: { left: 12, right: 12, top: 40, bottom: 16, containLabel: true },
-      title: {
-        text: t("compared-with", { period: comparison.baselineLabel }),
-        left: "center",
-        top: 8,
-        textStyle: {
-          fontSize: 13,
-          fontWeight: 500,
-        },
-      },
-      xAxis: {
-        type: "value",
-        axisLabel: {
-          formatter: (value: number) => String(amountToNumber(value)),
-        },
-      },
-      yAxis: {
-        type: "category",
-        data: data.map((item) => item.name),
-      },
-      tooltip: {
-        trigger: "item",
-        formatter: (params: any) => {
-          const value = Number(params.value ?? 0);
-          const sign = value > 0 ? "+" : "";
-          return `${params.name}<br/>${sign}${amountToNumber(value)}`;
-        },
-      },
-      series: [
-        {
-          type: "bar",
-          data: data.map((item) => ({
-            value: item.delta,
-            name: item.name,
-            id: item.id,
-            itemStyle: {
-              color: item.delta >= 0 ? "#16a34a" : "#e11d48",
-            },
-          })),
-          label: {
-            show: true,
-            position: "right",
-            formatter: (params: any) => {
-              const value = Number(params.value ?? 0);
-              const sign = value > 0 ? "+" : "";
-              return `${sign}${amountToNumber(value)}`;
-            },
-          },
-        },
-      ],
-    };
-  };
+  const [rankingPeriodIndex, setRankingPeriodIndex] = useState(0);
+  const activeComparison = categoryComparisons[rankingPeriodIndex];
+  const rankingItems = useMemo(() => {
+    if (!activeComparison) return [];
+    return [...activeComparison.topIncrease, ...activeComparison.topDecrease]
+      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  }, [activeComparison]);
 
-  const rankingCharts = useMemo(
-    () =>
-      categoryComparisons.map((comparison) => ({
-        baselineLabel: comparison.baselineLabel,
-        items: [
-          ...comparison.topIncrease,
-          ...comparison.topDecrease,
-        ] as CategoryDeltaChartItem[],
-        option: buildRankingChartOption(comparison),
-      })),
-    [categoryComparisons],
-  );
-
-  const onRankingChartClick = (event: ECElementEvent) => {
-    const id = String((event.data as { id?: string } | undefined)?.id ?? "");
-    if (!id) {
-      return;
-    }
-    openCategoryDetails(id);
-  };
   const [analysis, setAnalysis] = useState<AnalysisResult>();
   const analysisUnit =
     viewType === "yearly"
@@ -734,29 +680,54 @@ export default function Page() {
           <Assistant env={envArg} />
           {Part}
           <div className="w-full rounded-md border p-2">
-            <h2 className="font-medium text-lg my-3 text-center">
+            <h2 className="font-medium text-lg mt-2 mb-1 text-center">
               {t("category-change-ranking")}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {rankingCharts.map((chart) => (
-                <div
-                  key={chart.baselineLabel}
-                  className="rounded-md border p-2"
+            <div className="flex justify-center gap-1 mb-2">
+              {categoryComparisons.map((c, i) => (
+                <Button
+                  key={c.baselineLabel}
+                  size="sm"
+                  variant={rankingPeriodIndex === i ? "default" : "outline"}
+                  className="h-7 text-xs"
+                  onClick={() => setRankingPeriodIndex(i)}
                 >
-                  {chart.option ? (
-                    <Chart
-                      option={chart.option}
-                      className="w-full h-[280px]"
-                      onClick={onRankingChartClick}
-                    />
-                  ) : (
-                    <div className="h-[280px] flex items-center justify-center text-sm text-muted-foreground">
-                      {t("none")}
-                    </div>
-                  )}
-                </div>
+                  {t("compared-with", { period: c.baselineLabel })}
+                </Button>
               ))}
             </div>
+            {rankingItems.length > 0 ? (
+              <div className="flex flex-col gap-1.5">
+                {rankingItems.map((item) => {
+                  const isPositive = item.delta > 0;
+                  return (
+                    <button
+                      type="button"
+                      key={item.id}
+                      className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-muted/50 transition-colors"
+                      onClick={() => openCategoryDetails(item.id)}
+                    >
+                      <span className="text-sm">{item.name}</span>
+                      <span
+                        className={cn(
+                          "text-xs font-medium px-2 py-0.5 rounded-full",
+                          isPositive
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+                        )}
+                      >
+                        {isPositive ? "+" : ""}
+                        {amountToNumber(item.delta)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-4 flex items-center justify-center text-sm text-muted-foreground">
+                {t("none")}
+              </div>
+            )}
           </div>
           {tagStructure.length > 0 && (
             <div className="rounded-md border p-2 w-full flex flex-col">
@@ -792,6 +763,65 @@ export default function Page() {
               </div>
             </div>
           )}
+          {[
+            ...(topBills.expense ? [{ data: topBills.expense, label: t("expense") }] : []),
+            ...(topBills.income ? [{ data: topBills.income, label: t("income") }] : []),
+          ].map(({ data, label }) => (
+            <div key={label} className="w-full rounded-md border p-2">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-medium text-base">
+                  {t("top-bills")}
+                  <span className="text-xs text-muted-foreground ml-1">
+                    ({label})
+                  </span>
+                </h2>
+                <div className="flex gap-1">
+                  {[10, 20, 30].map((p) => (
+                    <Button
+                      key={p}
+                      size="sm"
+                      variant={topPercent === p ? "default" : "outline"}
+                      className="h-6 text-xs px-2"
+                      onClick={() => setTopPercent(p)}
+                    >
+                      {p}%
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              {data.top.length > 0 && (
+                <p className="text-xs text-muted-foreground mb-2 px-1">
+                  {t("top-bills-summary", {
+                    type: label,
+                    percent: topPercent,
+                    amount: amountToNumber(data.accumulated),
+                    count: data.top.length,
+                  })}
+                </p>
+              )}
+              <div className="flex flex-col">
+                {data.top.map((bill) => {
+                  const pct =
+                    data.totalAmount > 0
+                      ? ((bill.amount / data.totalAmount) * 100).toFixed(1)
+                      : "0";
+                  return (
+                    <div key={bill.id} className="flex items-center">
+                      <BillItem
+                        className="flex-1 min-w-0"
+                        bill={bill}
+                        showTime
+                        onClick={() => showBillInfo(bill)}
+                      />
+                      <span className="text-xs text-muted-foreground shrink-0 pl-2">
+                        {pct}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
           <div className="w-full rounded-md border p-2">
             <button
               type="button"
@@ -873,30 +903,6 @@ export default function Page() {
               )}
             </div>
           )}
-          <div className="w-full flex flex-col gap-4">
-            {dataSources.highestExpenseBill && (
-              <div className="rounded-md border p-2">
-                {t("highest-expense")}:
-                <BillItem
-                  className="w-full"
-                  bill={dataSources.highestExpenseBill}
-                  showTime
-                  onClick={() => showBillInfo(dataSources.highestExpenseBill!)}
-                />
-              </div>
-            )}
-            {dataSources.highestIncomeBill && (
-              <div className="rounded-md border p-2">
-                {t("highest-income")}:
-                <BillItem
-                  className="w-full"
-                  bill={dataSources.highestIncomeBill}
-                  showTime
-                  onClick={() => showBillInfo(dataSources.highestIncomeBill!)}
-                />
-              </div>
-            )}
-          </div>
           <div>
             <Button variant="ghost" onClick={() => seeDetails()}>
               {t("see-all-ledgers")}

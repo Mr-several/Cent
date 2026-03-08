@@ -198,6 +198,8 @@
   "users-balance-trend": "各用户结余趋势",
   "highest-expense": "最高支出",
   "highest-income": "最高收入",
+  "top-bills": "大额账单",
+  "top-bills-summary": "总{type}的 {percent}%（{amount}）仅由 {count} 笔交易构成",
   "overall-trend": "总体收支趋势",
   "categories-budget-included": "包含分类预算",
   "new-budget": "新预算",

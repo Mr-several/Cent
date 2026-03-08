@@ -565,39 +565,12 @@ export const userTrendOption = (
 };
 
 export const structureOption = (dataset: any[], options?: ECOption) => {
-    const total = dataset.reduce(
-        (sum: number, item: { value: number }) => sum + item.value,
-        0,
-    );
-
-    const coloredData = sortBy(dataset, (v) => v.value).map((item) => {
-        const percent = total > 0 ? (item.value / total) * 100 : 0;
-        const isLarge = percent >= 10;
-        return {
-            ...item,
-            itemStyle: {
-                color: categoryColors(item.id),
-            },
-            label: isLarge
-                ? {
-                      show: true,
-                      position: "inside" as const,
-                      formatter: `{b}\n{c}`,
-                      fontSize: 11,
-                      color: "#fff",
-                      textShadowColor: "rgba(0,0,0,0.3)",
-                      textShadowBlur: 2,
-                  }
-                : {
-                      show: true,
-                      position: "outside" as const,
-                      formatter: `{b} {c}`,
-                  },
-            labelLine: {
-                show: !isLarge,
-            },
-        };
-    });
+    const coloredData = sortBy(dataset, (v) => v.value).map((item) => ({
+        ...item,
+        itemStyle: {
+            color: categoryColors(item.id),
+        },
+    }));
 
     return merge(
         {
@@ -619,7 +592,21 @@ export const structureOption = (dataset: any[], options?: ECOption) => {
                     type: "pie",
                     center: ["55%", "50%"],
                     radius: "55%",
+                    label: {
+                        show: true,
+                        formatter: (params: {
+                            name: string;
+                            value: number;
+                            percent: number;
+                        }) => {
+                            if (params.percent >= 10) {
+                                return `${params.name}\n${params.value}`;
+                            }
+                            return `${params.name} ${params.value}`;
+                        },
+                    },
                     labelLine: {
+                        show: true,
                         length: 10,
                         length2: 10,
                         lineStyle: {

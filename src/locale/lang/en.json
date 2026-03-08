@@ -194,6 +194,8 @@
   "expense-structure": "Expense Structure",
   "highest-expense": "Highest Expense",
   "highest-income": "Highest Income",
+  "top-bills": "Top Bills",
+  "top-bills-summary": "{percent}% of total {type} ({amount}) is made up of just {count} transactions",
   "income-structure": "Income Structure",
   "users-balance-trend": "Users Balance Trend",
   "users-expense-trend": "Users Expense Trend",
