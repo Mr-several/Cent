@@ -276,6 +276,10 @@
   "analysis.growth.positive": "增长{p}%",
   "analysis.growth.negative": "减少{p}%",
   "analysis.comparison.full": "比{lastPeriod}{changeSinceLastPeriod}，比上一年同期{changeSinceLastYear}",
+  "metric.daily-avg": "日均",
+  "metric.projected-week": "周末预估",
+  "metric.projected-month": "月末预估",
+  "metric.projected-year": "年末预估",
   "analysis.summary.expense.day": "日均支出{dayAvg}",
   "analysis.summary.expense.month": "日均支出{dayAvg}，周均支出{weekAvg}，月均支出{monthAvg}，预计当月支出{projectedTotal}",
   "analysis.summary.expense.week": "日均支出{dayAvg}，周均支出{weekAvg}，预计当周支出{projectedTotal}",
@@ -761,5 +765,13 @@
   "receipt-tags-label": "标签",
   "receipt-tags-edit": "编辑标签",
   "receipt-tags-recent": "最近使用",
-  "receipt-category-edit": "编辑分类"
+  "receipt-category-edit": "编辑分类",
+  "category-change-ranking": "分类涨跌榜",
+  "compared-with": "相比{period}",
+  "top-increase-categories": "上涨最明显（Top 3）",
+  "top-decrease-categories": "下降最明显（Top 3）",
+  "last-period": "上个周期",
+  "two-periods-ago": "上上个周期",
+  "analysis-cloud": "词云",
+  "analysis-map": "地图"
 }

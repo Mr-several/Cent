@@ -11,6 +11,7 @@ import {
     useDragControls,
     useMotionValue,
 } from "motion/react";
+import { Capacitor } from "@capacitor/core";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { useCallback, useRef, useState } from "react";
 import { useIsDesktop } from "@/hooks/use-media-query";
@@ -194,6 +195,7 @@ function DialogContent({
     ...props
 }: DialogContentProps) {
     const isDesktop = useIsDesktop();
+    const isAndroidApp = Capacitor.getPlatform() === "android";
     const contentRef = useRef<HTMLDivElement>(null); // 用于获取 Dialog 内容的 DOM 元素
 
     // 动态选择变体
@@ -210,6 +212,7 @@ function DialogContent({
 
     // 1. MotionValue 用于追踪 X 轴拖拽位置
     const x = useMotionValue(0);
+    const enableSwipeDismiss = !isDesktop && !fade && !isAndroidApp;
 
     // 2. 引入 useDragControls
     const dragControls = useDragControls();
@@ -221,7 +224,7 @@ function DialogContent({
      */
     const isPointerNearLeftEdge = useCallback(
         (event: React.PointerEvent) => {
-            if (!contentRef.current || isDesktop || fade) return false;
+            if (!contentRef.current || !enableSwipeDismiss) return false;
 
             const rect = contentRef.current.getBoundingClientRect();
             // 假设 DialogContent 占据了屏幕大部分宽度
@@ -238,7 +241,7 @@ function DialogContent({
 
             return isNearEdge;
         },
-        [isDesktop, fade],
+        [enableSwipeDismiss],
     );
 
     /**
@@ -247,7 +250,7 @@ function DialogContent({
     const handlePointerDown = useCallback(
         (event: React.PointerEvent) => {
             // 仅在非桌面端使用此逻辑
-            if (isDesktop || fade) return;
+            if (!enableSwipeDismiss) return;
 
             // 阻止事件的默认行为，防止浏览器默认拖动等
 
@@ -262,7 +265,7 @@ function DialogContent({
                 // 此时手势将不会被识别为拖动。
             }
         },
-        [isDesktop, dragControls, fade, isPointerNearLeftEdge],
+        [dragControls, enableSwipeDismiss, isPointerNearLeftEdge],
     );
 
     // 3. 定义拖拽结束时的处理逻辑（保持不变）
@@ -321,10 +324,10 @@ function DialogContent({
                 // 绑定 X MotionValue
                 style={{ x }}
                 // --- 改造部分开始 ---
-                drag={isDesktop ? false : "x"}
-                dragListener={isDesktop ? undefined : false} // 关键：禁用 Framer Motion 的自动拖动监听
-                dragControls={dragControls} // 关键：绑定拖动控制器
-                onPointerDown={handlePointerDown} // 关键：手动处理 pointerdown 事件来启动拖动
+                drag={enableSwipeDismiss ? "x" : false}
+                dragListener={enableSwipeDismiss ? false : undefined} // 关键：禁用 Framer Motion 的自动拖动监听
+                dragControls={enableSwipeDismiss ? dragControls : undefined} // 关键：绑定拖动控制器
+                onPointerDown={enableSwipeDismiss ? handlePointerDown : undefined} // 关键：手动处理 pointerdown 事件来启动拖动
                 // --- 改造部分结束 ---
 
                 // 限制：阻止向左 (负方向) 拖拽

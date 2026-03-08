@@ -1,4 +1,5 @@
 import dayjs, { type OpUnitType } from "dayjs";
+import * as echarts from "echarts/core";
 import { merge, sortBy } from "lodash-es";
 import type { ECOption } from "@/components/chart";
 import { amountToNumber } from "@/ledger/bill";
@@ -11,6 +12,21 @@ import {
 } from "./color";
 import { toFixed } from "./number";
 import { formatDate } from "./time";
+
+function hexToRgba(hex: string, alpha: number): string {
+    const cleaned = hex.replace("#", "");
+    const r = Number.parseInt(cleaned.slice(0, 2), 16);
+    const g = Number.parseInt(cleaned.slice(2, 4), 16);
+    const b = Number.parseInt(cleaned.slice(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function makeAreaGradient(color: string) {
+    return new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+        { offset: 0, color: hexToRgba(color, 0.2) },
+        { offset: 1, color: hexToRgba(color, 0) },
+    ]);
+}
 
 /**
  * 处理器函数的选项
@@ -481,20 +497,34 @@ export const overallTrendOption = (
             },
             // 系列列表，定义了图表中的每一条线（或其他图形）
             series: [
-                // ECharts 会自动将 dataset 的第二列('收入')映射到第一个系列
                 {
                     type: "line",
                     smooth: true,
                     color: getCSSVariable("--color-income"),
+                    areaStyle: {
+                        color: makeAreaGradient(
+                            getCSSVariable("--color-income"),
+                        ),
+                    },
                 },
-                // 第三列('支出')映射到第二个系列
                 {
                     type: "line",
                     smooth: true,
                     color: getCSSVariable("--color-expense"),
+                    areaStyle: {
+                        color: makeAreaGradient(
+                            getCSSVariable("--color-expense"),
+                        ),
+                    },
                 },
-                // 第四列('结余')映射到第三个系列
-                { type: "line", smooth: true, color: "black" },
+                {
+                    type: "line",
+                    smooth: true,
+                    color: "black",
+                    areaStyle: {
+                        color: makeAreaGradient("#000000"),
+                    },
+                },
             ],
         },
         options,
@@ -535,14 +565,39 @@ export const userTrendOption = (
 };
 
 export const structureOption = (dataset: any[], options?: ECOption) => {
-    // 处理数据，为每一项注入基于 name 的固定颜色
-    const coloredData = sortBy(dataset, (v) => v.value).map((item) => ({
-        ...item,
-        itemStyle: {
-            // 根据 name 生成/获取固定颜色
-            color: categoryColors(item.id),
-        },
-    }));
+    const total = dataset.reduce(
+        (sum: number, item: { value: number }) => sum + item.value,
+        0,
+    );
+
+    const coloredData = sortBy(dataset, (v) => v.value).map((item) => {
+        const percent = total > 0 ? (item.value / total) * 100 : 0;
+        const isLarge = percent >= 10;
+        return {
+            ...item,
+            itemStyle: {
+                color: categoryColors(item.id),
+            },
+            label: isLarge
+                ? {
+                      show: true,
+                      position: "inside" as const,
+                      formatter: `{b}\n{c}`,
+                      fontSize: 11,
+                      color: "#fff",
+                      textShadowColor: "rgba(0,0,0,0.3)",
+                      textShadowBlur: 2,
+                  }
+                : {
+                      show: true,
+                      position: "outside" as const,
+                      formatter: `{b} {c}`,
+                  },
+            labelLine: {
+                show: !isLarge,
+            },
+        };
+    });
 
     return merge(
         {
@@ -565,7 +620,6 @@ export const structureOption = (dataset: any[], options?: ECOption) => {
                     center: ["55%", "50%"],
                     radius: "55%",
                     labelLine: {
-                        show: true,
                         length: 10,
                         length2: 10,
                         lineStyle: {
@@ -575,7 +629,6 @@ export const structureOption = (dataset: any[], options?: ECOption) => {
                         },
                         smooth: 0.2,
                     },
-                    // 使用处理后的带颜色数据
                     data: coloredData,
                     emphasis: {
                         itemStyle: {

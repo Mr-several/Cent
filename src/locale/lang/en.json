@@ -276,6 +276,10 @@
   "analysis.growth.positive": "an increase of {p}%",
   "analysis.growth.negative": "a decrease of {p}%",
   "analysis.comparison.full": "Compared to {lastPeriod}, there was {changeSinceLastPeriod}. Compared to the same period last year, there was {changeSinceLastYear}.",
+  "metric.daily-avg": "Daily Avg",
+  "metric.projected-week": "Est. Week",
+  "metric.projected-month": "Est. Month",
+  "metric.projected-year": "Est. Year",
   "analysis.summary.expense.day": "Average daily expense: {dayAvg}",
   "analysis.summary.expense.month": "Avg daily expense: {dayAvg}, Avg weekly expense: {weekAvg}, Avg monthly expense: {monthAvg}, Projected this month: {projectedTotal}",
   "analysis.summary.expense.week": "Avg daily expense: {dayAvg}, Avg weekly expense: {weekAvg}, Projected this week: {projectedTotal}",
@@ -749,5 +753,13 @@
   "receipt-tags-label": "Tags",
   "receipt-tags-edit": "Edit Tags",
   "receipt-tags-recent": "Recent",
-  "receipt-category-edit": "Edit Categories"
+  "receipt-category-edit": "Edit Categories",
+  "category-change-ranking": "Category Change Ranking",
+  "compared-with": "Compared with {period}",
+  "top-increase-categories": "Top Increases (Top 3)",
+  "top-decrease-categories": "Top Decreases (Top 3)",
+  "last-period": "Last Period",
+  "two-periods-ago": "Two Periods Ago",
+  "analysis-cloud": "Word Cloud",
+  "analysis-map": "Map"
 }
