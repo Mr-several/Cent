@@ -1,55 +1,67 @@
 import { asyncOnce } from "@/utils/async";
 
 // 从环境变量读取 LOGIN_API_HOST
-const LOGIN_API_HOST = import.meta.env.VITE_LOGIN_API_HOST;
+const LOGIN_API_HOST = (import.meta.env.VITE_LOGIN_API_HOST ?? "").trim();
 const LOCAL_TOKEN_KEY = "gitee_user_token";
 
 const { promise: loginFinished, resolve: resolveLoginFinished } =
     Promise.withResolvers<void>();
 
 export const createLoginAPI = () => {
+    const isOAuthEnabled = LOGIN_API_HOST.length > 0;
+
     const login = () => {
+        if (!isOAuthEnabled) {
+            return false;
+        }
         window.open(
             `${LOGIN_API_HOST}/api/gitee-oauth/authorize?redirect_uri=${encodeURIComponent(`${window.origin}`)}`,
             "_self",
         );
+        return true;
     };
 
     const afterLogin = async () => {
-        const resText = localStorage.getItem("_oauth_res");
-        if (!resText) {
-            resolveLoginFinished();
-            return;
-        }
-        const res = JSON.parse(resText);
-        if (res.type !== "gitee") {
-            return;
-        }
-        localStorage.removeItem("_oauth_res");
-        const url = new URL(res.url);
-        const tokenData = JSON.parse(
-            url.searchParams.get("gitee_authorized") ?? "{}",
-        );
-        const accessToken = tokenData["access_token"];
-        const expiresIn = tokenData["expires_in"];
-        const refreshToken = tokenData["refresh_token"];
-        const refreshTokenExpiresIn = tokenData["refresh_token_expires_in"];
-        const tokenType = tokenData["token_type"];
-        const scope = tokenData["scope"];
-
-        if (accessToken)
-            localStorage.setItem(
-                LOCAL_TOKEN_KEY,
-                JSON.stringify({
-                    accessToken,
-                    expiresIn: Date.now() + expiresIn,
-                    refreshToken,
-                    refreshTokenExpiresIn: Date.now() + refreshTokenExpiresIn,
-                    tokenType,
-                    scope,
-                }),
+        try {
+            const resText = localStorage.getItem("_oauth_res");
+            if (!resText) {
+                return;
+            }
+            const res = JSON.parse(resText);
+            if (res.type !== "gitee") {
+                return;
+            }
+            localStorage.removeItem("_oauth_res");
+            const url = new URL(res.url);
+            const tokenData = JSON.parse(
+                url.searchParams.get("gitee_authorized") ?? "{}",
             );
-        resolveLoginFinished();
+            const accessToken = tokenData["access_token"];
+            const expiresIn = tokenData["expires_in"];
+            const refreshToken = tokenData["refresh_token"];
+            const refreshTokenExpiresIn = tokenData["refresh_token_expires_in"];
+            const tokenType = tokenData["token_type"];
+            const scope = tokenData["scope"];
+
+            if (accessToken)
+                localStorage.setItem(
+                    LOCAL_TOKEN_KEY,
+                    JSON.stringify({
+                        accessToken,
+                        expiresIn: Date.now() + expiresIn * 1000,
+                        refreshToken,
+                        refreshTokenExpiresIn:
+                            Date.now() + refreshTokenExpiresIn * 1000,
+                        tokenType,
+                        scope,
+                    }),
+                );
+        } catch (error) {
+            localStorage.removeItem("_oauth_res");
+            console.error("Failed to restore gitee oauth result", error);
+        } finally {
+            resolveLoginFinished();
+        }
     };
 
     const _getToken = async () => {
@@ -58,7 +70,7 @@ export const createLoginAPI = () => {
         if (!token) {
             throw new Error("token not found");
         }
-        if (token.expiresIn) {
+        if (isOAuthEnabled && token.expiresIn) {
             const now = Date.now();
             const diff = token.expiresIn - now;
             // 小于2小时 刷新token
@@ -73,6 +85,9 @@ export const createLoginAPI = () => {
                         }),
                     },
                 );
+                if (!res.ok) {
+                    throw new Error("refresh token: Bad credentials");
+                }
                 const tokenData = (await res.json()) as GiteeTokenResponse;
                 const accessToken = tokenData["access_token"];
                 const expiresIn = tokenData["expires_in"];

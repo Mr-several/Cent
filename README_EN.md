@@ -101,10 +101,17 @@ The synchronization logic has been abstracted and encapsulated, with future supp
 
 1. Fork this repository  
 2. Deploy on [Cloudflare Pages](https://pages.cloudflare.com/) or any static hosting platform  
-3. Manually input your GitHub Token on the login screen to use it  
+3. Use manual Token login by default (clicking GitHub/Gitee login will automatically fall back to manual Token input)  
 4. All ledgers and data are stored in your GitHub repositories  
+5. (Optional) If you run your own OAuth backend, inject this variable at build time to enable one-click login:
+
+```bash
+VITE_LOGIN_API_HOST=https://<your-auth-host> pnpm run build:web
+```
 
 > For security reasons, the self-hosted method cannot support GitHub/Gitee one-click-authentication. You will need to manually generate a token with read and write permissions for the repository (Repo) on the Github/Gitee settings page, and use it through the manual token input feature.
+> If `VITE_LOGIN_API_HOST` is not configured, Cent will not initiate OAuth redirects, which avoids invalid `undefined/api/...` targets.
+> For Tencent Cloud static hosting, ensure SPA rewrite is configured as `/* -> /index.html`, and clear browser Service Worker caches before validating login.
 Cent uses Cloudflare Workers to deploy an online authentication service, which only provides services for trusted domains. If you require a quick login service, you can refer to the project [cent-github-backend](https://github.com/glink25/cent-github-backend) to create your own backend service and apply for an OAuth app on the corresponding platform yourself.
 
 ---

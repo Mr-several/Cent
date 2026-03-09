@@ -14,7 +14,8 @@
 		"pre-commit": "pnpm run lint",
 		"cap:sync:android": "pnpm run build:web && npx cap sync android",
 		"cap:sync:ios": "pnpm run build:web && npx cap sync ios",
-		"apk:debug": "pnpm run cap:sync:android && cd android && JAVA_HOME=$(/usr/libexec/java_home -v 21) ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-/tmp/android-sdk} ./gradlew assembleDebug",
+		"apk:debug": "pnpm run cap:sync:android && cd android && JAVA_HOME=$(/usr/libexec/java_home -v 21) ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-$ANDROID_HOME} ./gradlew assembleDebug",
+		"apk:release": "pnpm run cap:sync:android && cd android && JAVA_HOME=$(/usr/libexec/java_home -v 21) ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-$ANDROID_HOME} ./gradlew assembleRelease",
 		"ios:build:sim": "pnpm run cap:sync:ios && xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -destination 'generic/platform=iOS Simulator' build",
 		"ios:build:device": "pnpm run cap:sync:ios && xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -destination 'generic/platform=iOS' build"
 	},

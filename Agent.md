@@ -14,6 +14,16 @@
 
 涵盖新功能的具体实现规范，包括文件组织、组件编写、国际化、样式、类型定义及完整的示例流程。开发新功能时以此文档作为实现参考。
 
+### 3. 腾讯云部署指南（CloudBase）
+[`docs/deploy/tencent-cloud-hosting.md`](docs/deploy/tencent-cloud-hosting.md)
+
+涉及腾讯云 CloudBase 静态托管的构建、部署、响应头与 SPA Rewrite 配置时，按此文档执行。
+
+### 4. Android APK 打包指南
+[`docs/deploy/android-build.md`](docs/deploy/android-build.md)
+
+需要构建 Android APK 时，按此文档执行。包含环境配置、日常打包命令、SDK 重装步骤及关键文件说明。
+
 ## 基本原则
 
 - 所有代码提交前须通过 `pnpm run lint` 校验

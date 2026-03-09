@@ -24,10 +24,17 @@ const manuallyLogin = async () => {
     location.reload();
 };
 
+const login: SyncEndpointFactory["login"] = () => {
+    const oauthStarted = LoginAPI.login();
+    if (!oauthStarted) {
+        void manuallyLogin();
+    }
+};
+
 export const GiteeEndpoint: SyncEndpointFactory = {
     type: "gitee",
     name: "Gitee",
-    login: LoginAPI.login,
+    login,
     manuallyLogin,
     init: () => {
         LoginAPI.afterLogin();

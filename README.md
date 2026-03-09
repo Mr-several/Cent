@@ -102,10 +102,17 @@ Cent 内置一套自定义的增量同步策略，仅同步增量差异：
 
 1. Fork 本仓库  
 2. 在 [Cloudflare Pages](https://pages.cloudflare.com/) 或任意静态托管平台部署  
-3. 在登录界面手动输入 GitHub Token 使用  
+3. 默认使用手动 Token 登录（点击 GitHub/Gitee 登录会自动降级为手动 Token 输入）  
 4. 所有账本与数据均存储于你的 GitHub 仓库中  
+5. （可选）如果你自建了 OAuth 鉴权后端，再在构建时注入环境变量启用一键登录：
+
+```bash
+VITE_LOGIN_API_HOST=https://<your-auth-host> pnpm run build:web
+```
 
 > 出于安全考虑，self-hosted 方式无法支持 Github/Gitee 一键登录，需要自行在Github/Gitee设置页面生成具有Repo读写权限的token，通过手动输入token功能使用。
+> 未配置 `VITE_LOGIN_API_HOST` 时，Cent 不会发起 OAuth 跳转，避免出现跳到 `undefined/api/...` 的错误地址。
+> 腾讯云静态托管请确认已配置 SPA rewrite：`/* -> /index.html`，并在验证登录前清理浏览器 Service Worker 缓存。
 Cent使用Cloudflare Workers部署了一个线上鉴权服务，该服务只针对受信任的域名提供服务。如果需要快捷登录服务，可以参考这个项目[cent-github-backend](https://github.com/glink25/cent-github-backend)项目创建自己的后端服务，并自己申请对应平台的OAuth app。
 
 ---
