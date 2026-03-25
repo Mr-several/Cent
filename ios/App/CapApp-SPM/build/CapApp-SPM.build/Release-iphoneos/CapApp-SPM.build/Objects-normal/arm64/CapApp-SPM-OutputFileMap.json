@@ -1,0 +1,15 @@
+{
+  "" : {
+    "const-values" : "/Users/zhangzhiqi/Documents/personal project/Cent/ios/App/CapApp-SPM/build/CapApp-SPM.build/Release-iphoneos/CapApp-SPM.build/Objects-normal/arm64/CapApp-SPM-master.swiftconstvalues",
+    "dependencies" : "/Users/zhangzhiqi/Documents/personal project/Cent/ios/App/CapApp-SPM/build/CapApp-SPM.build/Release-iphoneos/CapApp-SPM.build/Objects-normal/arm64/CapApp-SPM-master.d",
+    "diagnostics" : "/Users/zhangzhiqi/Documents/personal project/Cent/ios/App/CapApp-SPM/build/CapApp-SPM.build/Release-iphoneos/CapApp-SPM.build/Objects-normal/arm64/CapApp-SPM-master.dia",
+    "emit-module-dependencies" : "/Users/zhangzhiqi/Documents/personal project/Cent/ios/App/CapApp-SPM/build/CapApp-SPM.build/Release-iphoneos/CapApp-SPM.build/Objects-normal/arm64/CapApp-SPM-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/zhangzhiqi/Documents/personal project/Cent/ios/App/CapApp-SPM/build/CapApp-SPM.build/Release-iphoneos/CapApp-SPM.build/Objects-normal/arm64/CapApp-SPM-master-emit-module.dia",
+    "swift-dependencies" : "/Users/zhangzhiqi/Documents/personal project/Cent/ios/App/CapApp-SPM/build/CapApp-SPM.build/Release-iphoneos/CapApp-SPM.build/Objects-normal/arm64/CapApp-SPM-master.swiftdeps"
+  },
+  "/Users/zhangzhiqi/Documents/personal project/Cent/ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift" : {
+    "index-unit-output-path" : "/CapApp-SPM.build/Release-iphoneos/CapApp-SPM.build/Objects-normal/arm64/CapApp-SPM.o",
+    "llvm-bc" : "/Users/zhangzhiqi/Documents/personal project/Cent/ios/App/CapApp-SPM/build/CapApp-SPM.build/Release-iphoneos/CapApp-SPM.build/Objects-normal/arm64/CapApp-SPM.bc",
+    "object" : "/Users/zhangzhiqi/Documents/personal project/Cent/ios/App/CapApp-SPM/build/CapApp-SPM.build/Release-iphoneos/CapApp-SPM.build/Objects-normal/arm64/CapApp-SPM.o"
+  }
+}

@@ -1,0 +1,6 @@
+version: "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)"
+options: "7a40bc59eb5b8913f6de723dd9b47b2e0307ffe3457f8e656f155bd08760424d"
+build_start_time: [1772983239, 314126000]
+build_end_time: [1772983239, 754871000]
+inputs:
+  "/Users/zhangzhiqi/Documents/personal project/Cent/ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift": [1770835285, 0]
